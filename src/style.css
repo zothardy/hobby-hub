@@ -1,0 +1,23 @@
+body { margin: 0; padding: 10px; font-family: Arial, sans-serif; background-color: #f4f4f4; }
+
+/* HelloWorld at the top-left */ 
+#hobbyhub { font-size: 32px; margin: 0 0 20px 0; cursor: pointer; }
+
+#hobbyhub:hover { color: #007bff; }
+/* Container for the three boxes */ .container { display: flex; gap: 20px; }
+
+/* Individual boxes */ .box { width: 150px; height: 150px; background-color: white; border: 3px solid #ccc; border-radius: 10px;
+
+display: flex;
+justify-content: center;
+align-items: center;
+
+font-size: 20px;
+cursor: pointer;
+
+transition: border-color 0.2s, background-color 0.2s;
+
+
+}
+
+/* Highlight the border when hovering */ .box:hover { border-color: #007bff; }

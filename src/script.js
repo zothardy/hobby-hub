@@ -1,14 +1,20 @@
-const helloText = document.getElementById("hello");
+const boxes = document.querySelectorAll(".box");
+const hobbyhub = document.getElementById("hobbyhub");
 
-const colors = ["red", "blue", "green", "purple", "orange"];
+const colors = ["lightblue", "lightgreen", "lightpink", "plum"];
 
-let colorIndex = 0;
-let count = 1;
+boxes.forEach(function(box) { let colorIndex = 0;
 
-helloText.addEventListener("click", function () { helloText.style.color = colors[colorIndex];
-helloText.textContent = `You clicked me ${count} times.`;
+box.addEventListener("click", function() {
+    box.style.backgroundColor = colors[colorIndex];
 
-colorIndex = (colorIndex + 1) % colors.length;
-count++;
+    colorIndex = (colorIndex + 1) % colors.length;
+});
+
+hobbyhub.addEventListener("click", function() {
+    boxes.forEach(function(box) {
+        box.style.backgroundColor = "white";
+    });
+});
 
 });
