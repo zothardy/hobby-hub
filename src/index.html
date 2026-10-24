@@ -1,18 +1,40 @@
 <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HobbyHub</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <header class="page-header">
+        <h1 id="hobbyhub">HobbyHub</h1>
+    </header>
 
-<html lang="en"> <head> <meta charset="UTF-8"> 
-<meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>HobbyHub</title>
+    <main>
+        <section aria-labelledby="current-hobbies-heading">
+            <div class="section-heading">
+                <div>
+                    <h2 id="current-hobbies-heading">Current Hobbies</h2>
+                    <p class="section-description">A few hobbies to get your test profile started.</p>
+                </div>
+            </div>
 
-<link rel="stylesheet" href="style.css">
-<script src="script.js" defer></script>
+            <form id="hobby-form" class="hobby-form">
+                <div class="form-field">
+                    <label for="hobby-title">Hobby name</label>
+                    <input id="hobby-title" name="title" type="text" maxlength="80" required>
+                </div>
+                <div class="form-field">
+                    <label for="hobby-description">Description</label>
+                    <input id="hobby-description" name="description" type="text" maxlength="240" required>
+                </div>
+                <button class="add-button" type="submit">Add hobby</button>
+            </form>
 
-
-</head> <body> <h1 id="hobbyhub">HobbyHub</h1> 
-
-<div class="container">
-    <div class = "box" id="box1">Box 1</div> 
-    <div class = "box" id="box2">Box 2</div> 
-    <div class = "box" id="box3">Box 3</div> 
-</div>
-
-</body> </html>
+            <ul id="hobby-list" class="hobby-list" aria-live="polite"></ul>
+        </section>
+    </main>
+</body>
+</html>

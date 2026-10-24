@@ -6,3 +6,7 @@
     - Hobby Heaven: Sometimes people grow out of their hobbies, and that's okay! If the user wishes, they may display hobbies that they look back on fondly, but no longer participate in. 
     - Hobby Graveyard: We've all thought how fun it would be to start a hobby in woodworking (and if you did, then awesome for you!), but sometimes it doesn't pan out. This is a place to display hobbies you've given a shot and it just wasn't your vibe.
     - Hopeful Hobbies: Wanted to start that D&D campaign but haven't gotten around to it? Users may display what they hope to pick up in the future. Who knows? Maybe someone'll find that they had similar plans, and finally get that dice rollin'! 
+
+## Current prototype
+- The Current Hobbies list starts with sample hobbies for a test user: hiking, watercolor painting, and Dungeons & Dragons.
+- Add a hobby with a name and description, or remove it from the list. The list is saved in the browser using local storage.

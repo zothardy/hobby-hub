@@ -1,23 +1,25 @@
 body { margin: 0; padding: 10px; font-family: Arial, sans-serif; background-color: #f4f4f4; }
+.page-header { margin-bottom: 20px; }
+#hobbyhub { font-size: 32px; margin: 0; }
+main { max-width: 900px; margin: 0 auto; }
+section { margin-bottom: 36px; }
+.section-heading { margin-bottom: 20px; }
+h2 { margin: 0 0 6px; }
+.section-description { margin: 0; color: #555; }
+.hobby-form { display: grid; grid-template-columns: 1fr 2fr auto; align-items: end; gap: 12px; padding: 16px; background: white; border: 1px solid #ddd; border-radius: 10px; }
+.form-field { display: flex; flex-direction: column; gap: 6px; }
+.form-field label { font-size: 14px; font-weight: bold; }
+.form-field input { min-width: 0; padding: 10px; border: 1px solid #aaa; border-radius: 6px; font: inherit; }
+.add-button, .remove-button { padding: 10px 14px; border: 0; border-radius: 6px; cursor: pointer; font: inherit; }
+.add-button { color: white; background: #007bff; }
+.add-button:hover { background: #0069d9; }
+.hobby-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 18px 0 0; padding: 0; list-style: none; }
+.hobby-card { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 16px; background: white; border: 1px solid #ddd; border-radius: 10px; }
+.hobby-details h3 { margin: 0 0 8px; }
+.hobby-details p { margin: 0; color: #555; line-height: 1.4; }
+.remove-button { flex: 0 0 auto; color: #9b1c1c; background: #fff0f0; }
+.remove-button:hover { background: #ffe0e0; }
 
-/* HelloWorld at the top-left */ 
-#hobbyhub { font-size: 32px; margin: 0 0 20px 0; cursor: pointer; }
-
-#hobbyhub:hover { color: #007bff; }
-/* Container for the three boxes */ .container { display: flex; gap: 20px; }
-
-/* Individual boxes */ .box { width: 150px; height: 150px; background-color: white; border: 3px solid #ccc; border-radius: 10px;
-
-display: flex;
-justify-content: center;
-align-items: center;
-
-font-size: 20px;
-cursor: pointer;
-
-transition: border-color 0.2s, background-color 0.2s;
-
-
+@media (max-width: 640px) {
+    .hobby-form { grid-template-columns: 1fr; }
 }
-
-/* Highlight the border when hovering */ .box:hover { border-color: #007bff; }
