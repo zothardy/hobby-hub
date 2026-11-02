@@ -9,4 +9,19 @@
 
 ## Current prototype
 - The Current Hobbies list starts with sample hobbies for a test user: hiking, watercolor painting, and Dungeons & Dragons.
-- Add a hobby with a name and description, or remove it from the list. The list is saved in the browser using local storage.
+- Add a hobby with a name and description, or remove a hobby. Hobbies are saved in the browser using local storage.
+- Each hobby has an expandable Events dropdown that shows its event count.
+- Add events with a name, location, Google Maps search, date, and time.
+- Search for a venue or address in Google Maps and preview the result before saving the event.
+- Open an event's location directly in Google Maps.
+- Share an event using a HobbyHub landing-page link. The landing page displays the event name, hobby, date, time, location, and map link.
+- Remove events independently from their parent hobby.
+
+## Running locally
+From the project root, run:
+
+```sh
+python3 -m http.server 4173 --directory src
+```
+
+Then open `http://localhost:4173`.
