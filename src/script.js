@@ -87,8 +87,7 @@ async function shareEvent(hobby, event, button) {
         title: event.title,
         text: event.title + " at " + event.location + " - " + formatDateTime(event.dateTime),
         url: getEventPageUrl(hobby, event)
-    }
-;
+    };
     try {
         if (navigator.share) {
             await navigator.share(shareData);
@@ -109,6 +108,7 @@ async function shareEvent(hobby, event, button) {
 function createEventForm(hobby, hobbyIndex) {
     const form = document.createElement("form");
     form.className = "event-form";
+    form.noValidate = true;
 
     const fields = [
         { className: "event-title-field", label: "Event name", name: "title", type: "text", required: true },
@@ -187,6 +187,17 @@ function createEventForm(hobby, hobbyIndex) {
 
     form.addEventListener("submit", function(event) {
         event.preventDefault();
+        const requiredInputs = [...form.querySelectorAll("[required]")];
+        const missingInput = requiredInputs.find(function(input) {
+            return !input.value.trim();
+        });
+
+        if (missingInput) {
+            missingInput.reportValidity();
+            missingInput.focus();
+            return;
+        }
+
         const formData = new FormData(form);
         const mapQuery = formData.get("mapQuery").trim();
         hobby.events.push({
