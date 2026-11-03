@@ -115,16 +115,37 @@ function formatDateTime(dateTime) {
     });
 }
 
+function encodeEventToken(payload) {
+    const bytes = new TextEncoder().encode(JSON.stringify(payload));
+    let binary = "";
+    bytes.forEach(function(byte) {
+        binary += String.fromCharCode(byte);
+    });
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function decodeEventToken(token) {
+    const base64 = token.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, function(character) {
+        return character.charCodeAt(0);
+    });
+    return JSON.parse(new TextDecoder().decode(bytes));
+}
+
 function getEventPageUrl(hobby, event) {
+    const payload = {
+        e: event.id || "shared-event",
+        h: hobby.title,
+        t: event.title,
+        l: event.location,
+        d: event.dateTime,
+        q: event.location
+    };
     const url = new URL(window.location.href);
     url.search = "";
-    url.hash = "";
-    url.searchParams.set("event", event.id || "shared-event");
-    url.searchParams.set("hobby", hobby.title);
-    url.searchParams.set("title", event.title);
-    url.searchParams.set("location", event.location);
-    url.searchParams.set("dateTime", event.dateTime);
-    url.searchParams.set("mapUrl", event.mapUrl);
+    url.hash = "e=" + encodeEventToken(payload);
     return url.toString();
 }
 
@@ -303,9 +324,32 @@ function renderEvent(event, hobby, hobbyIndex, eventIndex) {
     return item;
 }
 
-function renderEventLanding() {
-    const params = new URLSearchParams(window.location.search);
-    if (!params.has("event") || !params.has("title")) {
+async function renderEventLanding() {
+    let params = null;
+    const fragmentParams = new URLSearchParams(window.location.hash.slice(1));
+    if (fragmentParams.has("e")) {
+        try {
+            const token = decodeEventToken(fragmentParams.get("e"));
+            params = {
+                event: token.e,
+                hobby: token.h,
+                title: token.t,
+                location: token.l,
+                dateTime: token.d,
+                mapUrl: "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(token.q || token.l || "")
+            };
+        } catch (error) {
+            console.error("Unable to decode shared event.", error);
+            return false;
+        }
+    } else {
+        const queryParams = new URLSearchParams(window.location.search);
+        if (queryParams.has("event") && queryParams.has("title")) {
+            params = Object.fromEntries(queryParams.entries());
+        }
+    }
+
+    if (!params) {
         return false;
     }
 
@@ -319,19 +363,19 @@ function renderEventLanding() {
     const mapLink = document.createElement("a");
 
     eventTitle.id = "event-landing-title";
-    eventTitle.textContent = params.get("title");
+    eventTitle.textContent = params.title;
     hobbyName.className = "event-landing-hobby";
-    hobbyName.textContent = params.get("hobby") || "HobbyHub event";
-    dateTime.textContent = formatDateTime(params.get("dateTime"));
-    location.textContent = params.get("location") || "Location not provided";
+    hobbyName.textContent = params.hobby || "HobbyHub event";
+    dateTime.textContent = formatDateTime(params.dateTime);
+    location.textContent = params.location || "Location not provided";
     mapLink.className = "map-link";
-    mapLink.href = params.get("mapUrl") || "https://maps.google.com/";
+    mapLink.href = params.mapUrl || "https://maps.google.com/";
     mapLink.target = "_blank";
     mapLink.rel = "noopener noreferrer";
     mapLink.textContent = "View location";
 
     content.replaceChildren(eventTitle, hobbyName, dateTime, location, mapLink);
-    document.title = params.get("title") + " | HobbyHub";
+    document.title = params.title + " | HobbyHub";
     hobbiesView.hidden = true;
     landing.hidden = false;
     return true;
@@ -406,7 +450,14 @@ function addHobby(event) {
     hobbyTitleInput.focus();
 }
 
-if (!renderEventLanding()) {
-    renderHobbies();
-    hobbyForm.addEventListener("submit", addHobby);
+function initializePage() {
+    renderEventLanding().then(function(isEventLanding) {
+        if (!isEventLanding) {
+            renderHobbies();
+            hobbyForm.addEventListener("submit", addHobby);
+        }
+    });
 }
+
+window.addEventListener("hashchange", initializePage);
+initializePage();
