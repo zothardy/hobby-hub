@@ -1,8 +1,54 @@
 const hobbyForm = document.getElementById("hobby-form");
 const hobbyTitleInput = document.getElementById("hobby-title");
 const hobbyDescriptionInput = document.getElementById("hobby-description");
+const hobbyImageInput = document.getElementById("hobby-image");
 const hobbyList = document.getElementById("hobby-list");
 const hobbiesStorageKey = "hobbyHubCurrentHobbies";
+const appearanceStorageKey = "hobbyHubAppearance";
+const themeToggle = document.getElementById("theme-toggle");
+const colorSchemeSelect = document.getElementById("color-scheme");
+
+const appearance = loadAppearance();
+applyAppearance();
+
+function loadAppearance() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(appearanceStorageKey));
+        return {
+            theme: saved && saved.theme === "dark" ? "dark" : "light",
+            scheme: saved && ["forest", "ocean", "berry", "sunset"].includes(saved.scheme) ? saved.scheme : "forest"
+        };
+    } catch (error) {
+        return { theme: "light", scheme: "forest" };
+    }
+}
+
+function saveAppearance() {
+    localStorage.setItem(appearanceStorageKey, JSON.stringify(appearance));
+}
+
+function applyAppearance() {
+    document.documentElement.dataset.theme = appearance.theme;
+    document.documentElement.dataset.scheme = appearance.scheme;
+    const isDark = appearance.theme === "dark";
+    themeToggle.textContent = isDark ? "☀" : "☾";
+    themeToggle.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
+    themeToggle.title = isDark ? "Switch to light mode" : "Switch to dark mode";
+    themeToggle.setAttribute("aria-pressed", String(isDark));
+    colorSchemeSelect.value = appearance.scheme;
+}
+
+themeToggle.addEventListener("click", function() {
+    appearance.theme = appearance.theme === "dark" ? "light" : "dark";
+    saveAppearance();
+    applyAppearance();
+});
+
+colorSchemeSelect.addEventListener("change", function() {
+    appearance.scheme = colorSchemeSelect.value;
+    saveAppearance();
+    applyAppearance();
+});
 
 const sampleHobbies = [
     {
@@ -300,17 +346,25 @@ function renderHobbies() {
         const title = document.createElement("h3");
         const description = document.createElement("p");
         const removeButton = document.createElement("button");
+        const coverImage = document.createElement("img");
         const eventsDropdown = document.createElement("details");
         const eventsHeading = document.createElement("summary");
         const eventList = document.createElement("ul");
 
-        item.className = "hobby-card";
+        item.className = "hobby-card" + (hobby.imageUrl ? " hobby-card-with-image" : "");
         details.className = "hobby-details";
         title.textContent = hobby.title;
         description.textContent = hobby.description;
         eventsDropdown.className = "events-dropdown";
         eventsHeading.textContent = "Events (" + hobby.events.length + ")";
         eventList.className = "event-list";
+
+        if (hobby.imageUrl) {
+            coverImage.className = "hobby-cover-image";
+            coverImage.src = hobby.imageUrl;
+            coverImage.alt = "";
+            coverImage.loading = "lazy";
+        }
 
         hobby.events.forEach(function(event, eventIndex) {
             eventList.append(renderEvent(event, hobby, hobbyIndex, eventIndex));
@@ -327,7 +381,11 @@ function renderHobbies() {
 
         eventsDropdown.append(eventsHeading, eventList, createEventForm(hobby, hobbyIndex));
         details.append(title, description, removeButton, eventsDropdown);
-        item.append(details);
+        if (hobby.imageUrl) {
+            item.append(coverImage, details);
+        } else {
+            item.append(details);
+        }
         hobbyList.append(item);
     });
 }
@@ -336,11 +394,12 @@ function addHobby(event) {
     event.preventDefault();
     const title = hobbyTitleInput.value.trim();
     const description = hobbyDescriptionInput.value.trim();
+    const imageUrl = hobbyImageInput.value.trim();
     if (!title || !description) {
         return;
     }
 
-    hobbies.push({ title: title, description: description, events: [] });
+    hobbies.push({ title: title, description: description, imageUrl: imageUrl, events: [] });
     saveHobbies();
     renderHobbies();
     hobbyForm.reset();

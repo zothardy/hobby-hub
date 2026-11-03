@@ -10,6 +10,16 @@
 <body>
     <header class="page-header">
         <h1 id="hobbyhub">HobbyHub</h1>
+        <div class="appearance-controls" aria-label="Appearance settings">
+            <button id="theme-toggle" class="appearance-button theme-icon-button" type="button" aria-label="Switch to dark mode" aria-pressed="false" title="Switch to dark mode">☾</button>
+            <label for="color-scheme">Color scheme</label>
+            <select id="color-scheme" class="scheme-select">
+                <option value="forest">Forest</option>
+                <option value="ocean">Ocean</option>
+                <option value="berry">Berry</option>
+                <option value="sunset">Sunset</option>
+            </select>
+        </div>
     </header>
 
     <main>
@@ -34,6 +44,10 @@
                 <div class="form-field">
                     <label for="hobby-description">Description</label>
                     <input id="hobby-description" name="description" type="text" maxlength="240" required>
+                </div>
+                <div class="form-field">
+                    <label for="hobby-image">Cover image URL <span class="optional-label">(optional)</span></label>
+                    <input id="hobby-image" name="imageUrl" type="url" placeholder="https://example.com/hobby.jpg">
                 </div>
                 <button class="add-button" type="submit">Add hobby</button>
             </form>
