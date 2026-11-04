@@ -474,6 +474,10 @@ function renderHobbies() {
         cardLink.className = "hobby-card-link";
         cardLink.href = getHobbyHash(hobby);
         title.textContent = hobby.title;
+        cardLink.addEventListener("click", function(clickEvent) {
+            clickEvent.preventDefault();
+            window.location.hash = "hobby=" + encodeURIComponent(hobby.title);
+        });
 
         if (hobby.imageUrl) {
             coverImage.className = "hobby-cover-image";
