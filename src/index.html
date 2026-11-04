@@ -9,7 +9,7 @@
 </head>
 <body>
     <header class="page-header">
-        <h1 id="hobbyhub">HobbyHub</h1>
+        <h1 id="hobbyhub"><a href="./">HobbyHub</a></h1>
         <div class="appearance-controls" aria-label="Appearance settings">
             <button id="theme-toggle" class="appearance-button theme-icon-button" type="button" aria-label="Switch to dark mode" aria-pressed="false" title="Switch to dark mode">☾</button>
             <label for="color-scheme">Color scheme</label>
@@ -24,8 +24,12 @@
 
     <main>
         <section id="event-landing" class="event-landing" hidden aria-labelledby="event-landing-title">
-            <a href="./" class="back-link">Back to HobbyHub</a>
             <div id="event-landing-content"></div>
+        </section>
+
+        <section id="hobby-detail" class="hobby-detail" hidden aria-labelledby="hobby-detail-title">
+            <a href="./" class="back-link">Back to HobbyHub</a>
+            <div id="hobby-detail-content"></div>
         </section>
 
         <section id="hobbies-view" aria-labelledby="current-hobbies-heading">
@@ -41,9 +45,9 @@
                     <label for="hobby-title">Hobby name</label>
                     <input id="hobby-title" name="title" type="text" maxlength="80" required>
                 </div>
-                <div class="form-field">
+                <div class="form-field description-field">
                     <label for="hobby-description">Description</label>
-                    <input id="hobby-description" name="description" type="text" maxlength="240" required>
+                    <textarea id="hobby-description" name="description" rows="4" maxlength="2000" required></textarea>
                 </div>
                 <div class="form-field">
                     <label for="hobby-image">Cover image URL <span class="optional-label">(optional)</span></label>

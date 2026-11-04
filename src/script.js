@@ -69,6 +69,7 @@ const sampleHobbies = [
                 id: "garden-grove-dd",
                 title: "Dungeons & Dragons at Garden Grove SteelCraft",
                 location: "Garden Grove SteelCraft",
+                mapQuery: "Garden Grove SteelCraft, Garden Grove, CA",
                 mapUrl: "https://www.google.com/maps/search/?api=1&query=Garden+Grove+SteelCraft,+Garden+Grove,+CA",
                 dateTime: "2026-11-07T18:00"
             }
@@ -134,6 +135,22 @@ function decodeEventToken(token) {
     return JSON.parse(new TextDecoder().decode(bytes));
 }
 
+function getMapQuery(event) {
+    if (event.mapQuery) {
+        return event.mapQuery;
+    }
+
+    if (event.mapUrl) {
+        try {
+            return new URL(event.mapUrl).searchParams.get("query") || "";
+        } catch (error) {
+            return "";
+        }
+    }
+
+    return "";
+}
+
 function getEventPageUrl(hobby, event) {
     const payload = {
         e: event.id || "shared-event",
@@ -141,7 +158,7 @@ function getEventPageUrl(hobby, event) {
         t: event.title,
         l: event.location,
         d: event.dateTime,
-        q: event.location
+        q: getMapQuery(event)
     };
     const url = new URL(window.location.href);
     url.search = "";
@@ -271,6 +288,7 @@ function createEventForm(hobby, hobbyIndex) {
             id: "event-" + Date.now(),
             title: formData.get("title").trim(),
             location: formData.get("location").trim(),
+            mapQuery: mapQuery,
             mapUrl: "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(mapQuery),
             dateTime: formData.get("dateTime")
         });
@@ -288,6 +306,7 @@ function renderEvent(event, hobby, hobbyIndex, eventIndex) {
     const location = document.createElement("p");
     const actions = document.createElement("div");
     const mapLink = document.createElement("a");
+    const viewEventLink = document.createElement("a");
     const shareButton = document.createElement("button");
     const removeButton = document.createElement("button");
 
@@ -302,6 +321,10 @@ function renderEvent(event, hobby, hobbyIndex, eventIndex) {
     mapLink.target = "_blank";
     mapLink.rel = "noopener noreferrer";
     mapLink.textContent = "View location";
+
+    viewEventLink.className = "map-link";
+    viewEventLink.href = getEventPageUrl(hobby, event);
+    viewEventLink.textContent = "View event";
 
     shareButton.className = "share-button";
     shareButton.type = "button";
@@ -319,7 +342,7 @@ function renderEvent(event, hobby, hobbyIndex, eventIndex) {
         renderHobbies();
     });
 
-    actions.append(mapLink, shareButton);
+    actions.append(mapLink, viewEventLink, shareButton);
     item.append(title, dateTime, location, actions, removeButton);
     return item;
 }
@@ -360,7 +383,9 @@ async function renderEventLanding() {
     const hobbyName = document.createElement("p");
     const dateTime = document.createElement("p");
     const location = document.createElement("p");
+    const actions = document.createElement("div");
     const mapLink = document.createElement("a");
+    const backToHobbyLink = document.createElement("a");
 
     eventTitle.id = "event-landing-title";
     eventTitle.textContent = params.title;
@@ -373,11 +398,66 @@ async function renderEventLanding() {
     mapLink.target = "_blank";
     mapLink.rel = "noopener noreferrer";
     mapLink.textContent = "View location";
+    actions.className = "event-actions";
 
-    content.replaceChildren(eventTitle, hobbyName, dateTime, location, mapLink);
+    backToHobbyLink.className = "back-link back-to-hobby";
+    backToHobbyLink.href = "#hobby=" + encodeURIComponent(params.hobby || "");
+    backToHobbyLink.textContent = "Back to " + (params.hobby || "hobby");
+    actions.append(backToHobbyLink, mapLink);
+
+    content.replaceChildren(eventTitle, hobbyName, dateTime, location, actions);
     document.title = params.title + " | HobbyHub";
     hobbiesView.hidden = true;
     landing.hidden = false;
+    return true;
+}
+
+function getHobbyHash(hobby) {
+    return "#hobby=" + encodeURIComponent(hobby.title);
+}
+
+function renderHobbyDetail(hobbyIndex) {
+    const hobby = hobbies[hobbyIndex];
+    if (!hobby) {
+        return false;
+    }
+
+    const content = document.getElementById("hobby-detail-content");
+    const title = document.createElement("h2");
+    const description = document.createElement("p");
+    const removeButton = document.createElement("button");
+    const eventsDropdown = document.createElement("details");
+    const eventsHeading = document.createElement("summary");
+    const eventList = document.createElement("ul");
+
+    title.id = "hobby-detail-title";
+    title.textContent = hobby.title;
+    description.className = "hobby-description-full";
+    description.textContent = hobby.description;
+    eventsDropdown.className = "events-dropdown";
+    eventsHeading.textContent = "Events (" + hobby.events.length + ")";
+    eventList.className = "event-list";
+
+    hobby.events.forEach(function(event, eventIndex) {
+        eventList.append(renderEvent(event, hobby, hobbyIndex, eventIndex));
+    });
+
+    removeButton.className = "remove-button hobby-remove-button";
+    removeButton.type = "button";
+    removeButton.textContent = "Remove hobby";
+    removeButton.addEventListener("click", function() {
+        hobbies.splice(hobbyIndex, 1);
+        saveHobbies();
+        window.location.hash = "";
+        renderHobbies();
+    });
+
+    eventsDropdown.append(eventsHeading, eventList, createEventForm(hobby, hobbyIndex));
+    content.replaceChildren(title, description, removeButton, eventsDropdown);
+    document.title = hobby.title + " | HobbyHub";
+    document.getElementById("hobbies-view").hidden = true;
+    document.getElementById("event-landing").hidden = true;
+    document.getElementById("hobby-detail").hidden = false;
     return true;
 }
 
@@ -386,50 +466,24 @@ function renderHobbies() {
 
     hobbies.forEach(function(hobby, hobbyIndex) {
         const item = document.createElement("li");
-        const details = document.createElement("div");
+        const cardLink = document.createElement("a");
         const title = document.createElement("h3");
-        const description = document.createElement("p");
-        const removeButton = document.createElement("button");
         const coverImage = document.createElement("img");
-        const eventsDropdown = document.createElement("details");
-        const eventsHeading = document.createElement("summary");
-        const eventList = document.createElement("ul");
 
-        item.className = "hobby-card" + (hobby.imageUrl ? " hobby-card-with-image" : "");
-        details.className = "hobby-details";
+        item.className = "hobby-card hobby-card-summary" + (hobby.imageUrl ? " hobby-card-with-image" : "");
+        cardLink.className = "hobby-card-link";
+        cardLink.href = getHobbyHash(hobby);
         title.textContent = hobby.title;
-        description.textContent = hobby.description;
-        eventsDropdown.className = "events-dropdown";
-        eventsHeading.textContent = "Events (" + hobby.events.length + ")";
-        eventList.className = "event-list";
 
         if (hobby.imageUrl) {
             coverImage.className = "hobby-cover-image";
             coverImage.src = hobby.imageUrl;
             coverImage.alt = "";
             coverImage.loading = "lazy";
+            cardLink.append(coverImage);
         }
-
-        hobby.events.forEach(function(event, eventIndex) {
-            eventList.append(renderEvent(event, hobby, hobbyIndex, eventIndex));
-        });
-
-        removeButton.className = "remove-button hobby-remove-button";
-        removeButton.type = "button";
-        removeButton.textContent = "Remove hobby";
-        removeButton.addEventListener("click", function() {
-            hobbies.splice(hobbyIndex, 1);
-            saveHobbies();
-            renderHobbies();
-        });
-
-        eventsDropdown.append(eventsHeading, eventList, createEventForm(hobby, hobbyIndex));
-        details.append(title, description, removeButton, eventsDropdown);
-        if (hobby.imageUrl) {
-            item.append(coverImage, details);
-        } else {
-            item.append(details);
-        }
+        cardLink.append(title);
+        item.append(cardLink);
         hobbyList.append(item);
     });
 }
@@ -451,9 +505,27 @@ function addHobby(event) {
 }
 
 function initializePage() {
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+
+    if (hashParams.has("hobby")) {
+        const hobbyTitle = hashParams.get("hobby");
+        const hobbyIndex = hobbies.findIndex(function(hobby) {
+            return hobby.title === hobbyTitle;
+        });
+        document.getElementById("hobbies-view").hidden = true;
+        document.getElementById("event-landing").hidden = true;
+        renderHobbyDetail(hobbyIndex);
+        return;
+    }
+
+    document.getElementById("event-landing").hidden = true;
+    document.getElementById("hobby-detail").hidden = true;
+    document.getElementById("hobbies-view").hidden = false;
+
     renderEventLanding().then(function(isEventLanding) {
         if (!isEventLanding) {
             renderHobbies();
+            hobbyForm.removeEventListener("submit", addHobby);
             hobbyForm.addEventListener("submit", addHobby);
         }
     });
