@@ -293,7 +293,7 @@ function createEventForm(hobby, hobbyIndex) {
             dateTime: formData.get("dateTime")
         });
         saveHobbies();
-        renderHobbies();
+        refreshCurrentHobbyPage();
     });
 
     return form;
@@ -339,7 +339,7 @@ function renderEvent(event, hobby, hobbyIndex, eventIndex) {
     removeButton.addEventListener("click", function() {
         hobby.events.splice(eventIndex, 1);
         saveHobbies();
-        renderHobbies();
+        refreshCurrentHobbyPage();
     });
 
     actions.append(mapLink, viewEventLink, shareButton);
@@ -414,6 +414,25 @@ async function renderEventLanding() {
 
 function getHobbyHash(hobby) {
     return "#hobby=" + encodeURIComponent(hobby.title);
+}
+
+function refreshCurrentHobbyPage() {
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    if (!hashParams.has("hobby")) {
+        renderHobbies();
+        return;
+    }
+
+    const hobbyTitle = hashParams.get("hobby");
+    const hobbyIndex = hobbies.findIndex(function(hobby) {
+        return hobby.title === hobbyTitle;
+    });
+    renderHobbyDetail(hobbyIndex);
+
+    const refreshedDetails = document.querySelector("#hobby-detail .events-dropdown");
+    if (refreshedDetails) {
+        refreshedDetails.open = true;
+    }
 }
 
 function renderHobbyDetail(hobbyIndex) {
