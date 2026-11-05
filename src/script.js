@@ -65,6 +65,29 @@ colorSchemeSelect.addEventListener("change", function() {
     applyAppearance();
 });
 
+const testHobbies = [
+    {
+        title: "Board Games",
+        description: "A weekly group for testing new board games, sharing strategies, and meeting friends.",
+        imageUrl: "https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=1200&q=80"
+    },
+    {
+        title: "Photography",
+        description: "Explore local streets, parks, and changing light while practicing everyday photography.",
+        imageUrl: "https://images.unsplash.com/photo-1452780212940-6f5c0d14d848?auto=format&fit=crop&w=1200&q=80"
+    },
+    {
+        title: "Cooking",
+        description: "Try new recipes, share favorite meals, and build a collection of dishes worth making again.",
+        imageUrl: "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1200&q=80"
+    },
+    {
+        title: "Gardening",
+        description: "Grow flowers, herbs, and vegetables while learning what thrives in each season.",
+        imageUrl: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=1200&q=80"
+    }
+];
+
 const sampleHobbies = [
     {
         id: "sample-hiking",
@@ -720,11 +743,14 @@ function renderHobbies() {
 }
 
 const testHobbyButton = document.getElementById("test-hobby-button");
+let testHobbyIndex = 0;
 if (testHobbyButton) {
     testHobbyButton.addEventListener("click", function() {
-        hobbyTitleInput.value = "Board Games";
-        hobbyDescriptionInput.value = "A weekly group for testing new board games, sharing strategies, and meeting friends.";
-        hobbyImageInput.value = "https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=1200&q=80";
+        const testHobby = testHobbies[testHobbyIndex % testHobbies.length];
+        hobbyTitleInput.value = testHobby.title;
+        hobbyDescriptionInput.value = testHobby.description;
+        hobbyImageInput.value = testHobby.imageUrl;
+        testHobbyIndex += 1;
     });
 }
 
