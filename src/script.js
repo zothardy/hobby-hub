@@ -427,12 +427,9 @@ function refreshCurrentHobbyPage() {
     const hobbyIndex = hobbies.findIndex(function(hobby) {
         return hobby.title === hobbyTitle;
     });
-    renderHobbyDetail(hobbyIndex);
-
-    const refreshedDetails = document.querySelector("#hobby-detail .events-dropdown");
-    if (refreshedDetails) {
-        refreshedDetails.open = true;
-    }
+    window.requestAnimationFrame(function() {
+        renderHobbyDetail(hobbyIndex);
+    });
 }
 
 function renderHobbyDetail(hobbyIndex) {
@@ -454,6 +451,7 @@ function renderHobbyDetail(hobbyIndex) {
     description.className = "hobby-description-full";
     description.textContent = hobby.description;
     eventsDropdown.className = "events-dropdown";
+    eventsDropdown.open = true;
     eventsHeading.textContent = "Events (" + hobby.events.length + ")";
     eventList.className = "event-list";
 
