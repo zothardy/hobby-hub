@@ -802,6 +802,13 @@ async function signIn(email, password) {
     return error;
 }
 
+function getAuthRedirectUrl() {
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+        return "http://localhost:4173/";
+    }
+    return "https://zothardy.github.io/hobby-hub/";
+}
+
 async function handleSignUp(event) {
     event.preventDefault();
     const formData = new FormData(signupForm);
@@ -811,7 +818,10 @@ async function handleSignUp(event) {
     const { data, error } = await hobbyHubSupabase.auth.signUp({
         email: email,
         password: password,
-        options: { data: { username: username } }
+        options: {
+            data: { username: username },
+            emailRedirectTo: getAuthRedirectUrl()
+        }
     });
 
     authStatus.textContent = error ? error.message : "Check your email to confirm the account.";
@@ -887,6 +897,7 @@ signOutButton.addEventListener("click", async function() {
             })
         };
     });
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
     window.requestAnimationFrame(initializePage);
 });
 

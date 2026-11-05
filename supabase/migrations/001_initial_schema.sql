@@ -93,31 +93,43 @@ create table if not exists public.events (
 alter table public.hobbies enable row level security;
 alter table public.events enable row level security;
 
+drop trigger if exists on_auth_user_created on auth.users;
 drop function if exists public.handle_new_profile();
 create function public.handle_new_profile()
 returns trigger
 language plpgsql
-security definer set search_path = public
+security definer set search_path = public, pg_temp
 as $$
 declare
+    base_username text;
     next_username text;
+    suffix integer := 0;
 begin
-    next_username := lower(regexp_replace(
+    base_username := lower(regexp_replace(
         coalesce(nullif(new.raw_user_meta_data->>'username', ''), split_part(new.email, '@', 1)),
         '[^A-Za-z0-9_]', '', 'g'
     ));
-    if char_length(next_username) < 3 then
-        next_username := 'user_' || substr(replace(new.id::text, '-', ''), 1, 12);
+    if char_length(base_username) < 3 then
+        base_username := 'user_' || substr(replace(new.id::text, '-', ''), 1, 12);
     end if;
 
+    base_username := left(base_username, 24);
+    next_username := base_username;
+    while exists (
+        select 1 from public.profiles
+        where lower(username) = next_username
+    ) loop
+        suffix := suffix + 1;
+        next_username := left(base_username, 24) || '_' || suffix;
+    end loop;
+
     insert into public.profiles (id, username)
-    values (new.id, left(next_username, 30))
+    values (new.id, next_username)
     on conflict (id) do update set username = excluded.username;
     return new;
 end;
 $$;
 
-drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
 after insert on auth.users
 for each row execute function public.handle_new_profile();
