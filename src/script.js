@@ -611,5 +611,15 @@ function initializePage() {
     });
 }
 
+async function signIn(email, password) {
+  const { data, error } = await hobbyHubSupabase.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  console.log(data, error);
+  return error;
+}
+
 window.addEventListener("hashchange", initializePage);
 initializePage();
