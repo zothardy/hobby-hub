@@ -11,15 +11,34 @@
 <body>
     <header class="page-header">
         <h1 id="hobbyhub"><a href="./">HobbyHub</a></h1>
-        <div class="appearance-controls" aria-label="Appearance settings">
-            <button id="theme-toggle" class="appearance-button theme-icon-button" type="button" aria-label="Switch to dark mode" aria-pressed="false" title="Switch to dark mode">☾</button>
-            <label for="color-scheme">Color scheme</label>
-            <select id="color-scheme" class="scheme-select">
-                <option value="forest">Forest</option>
-                <option value="ocean">Ocean</option>
-                <option value="berry">Berry</option>
-                <option value="sunset">Sunset</option>
-            </select>
+        <div class="header-controls">
+            <div class="appearance-controls" aria-label="Appearance settings">
+                <button id="theme-toggle" class="appearance-button theme-icon-button" type="button" aria-label="Switch to dark mode" aria-pressed="false" title="Switch to dark mode">☾</button>
+                <label for="color-scheme">Color scheme</label>
+                <select id="color-scheme" class="scheme-select">
+                    <option value="forest">Forest</option>
+                    <option value="ocean">Ocean</option>
+                    <option value="berry">Berry</option>
+                    <option value="sunset">Sunset</option>
+                </select>
+            </div>
+            <div class="account-controls" id="account-controls">
+                <form id="auth-form" class="auth-form">
+                    <label for="auth-email">Email</label>
+                    <input id="auth-email" type="email" autocomplete="email" required>
+                    <label for="auth-password">Password</label>
+                    <input id="auth-password" type="password" autocomplete="current-password" required minlength="6">
+                    <div class="auth-actions">
+                        <button id="sign-in-button" class="appearance-button" type="submit">Sign in</button>
+                        <button id="sign-up-button" class="appearance-button" type="button">Sign up</button>
+                    </div>
+                </form>
+                <div id="signed-in-controls" class="signed-in-controls" hidden>
+                    <span id="account-email"></span>
+                    <button id="sign-out-button" class="appearance-button" type="button">Sign out</button>
+                </div>
+                <p id="auth-status" class="auth-status" role="status"></p>
+            </div>
         </div>
     </header>
 
@@ -41,7 +60,7 @@
                 </div>
             </div>
 
-            <form id="hobby-form" class="hobby-form">
+            <form id="hobby-form" class="hobby-form" hidden>
                 <div class="form-field">
                     <label for="hobby-title">Hobby name</label>
                     <input id="hobby-title" name="title" type="text" maxlength="80" required>

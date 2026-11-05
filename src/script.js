@@ -7,6 +7,14 @@ const hobbiesStorageKey = "hobbyHubCurrentHobbies";
 const appearanceStorageKey = "hobbyHubAppearance";
 const themeToggle = document.getElementById("theme-toggle");
 const colorSchemeSelect = document.getElementById("color-scheme");
+const authForm = document.getElementById("auth-form");
+const signUpButton = document.getElementById("sign-up-button");
+const signOutButton = document.getElementById("sign-out-button");
+const authEmailInput = document.getElementById("auth-email");
+const authPasswordInput = document.getElementById("auth-password");
+const authStatus = document.getElementById("auth-status");
+const signedInControls = document.getElementById("signed-in-controls");
+const accountEmail = document.getElementById("account-email");
 
 const supabaseUrl = "https://qceemfcukiqysbshipao.supabase.co";
 const supabaseAnonKey = "sb_publishable_4m08UL06yaVSmfOosnJA5Q_37zwACJK";
@@ -108,9 +116,126 @@ function loadHobbies() {
 }
 
 let hobbies = loadHobbies();
+let currentUser = null;
 
 function saveHobbies() {
     localStorage.setItem(hobbiesStorageKey, JSON.stringify(hobbies));
+
+    if (currentUser) {
+        syncHobbiesToSupabase().catch(function(error) {
+            authStatus.textContent = "Unable to save hobbies: " + error.message;
+        });
+    }
+}
+
+async function loadHobbiesFromSupabase() {
+    const { data: hobbyRows, error: hobbyError } = await hobbyHubSupabase
+        .from("hobbies")
+        .select("id,title,description,image_url")
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: true });
+
+    if (hobbyError) {
+        throw hobbyError;
+    }
+
+    const { data: eventRows, error: eventError } = await hobbyHubSupabase
+        .from("events")
+        .select("id,share_id,hobby_id,title,hobby_title,location,map_query,map_url,starts_at,image_url,is_public")
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: true });
+
+    if (eventError) {
+        throw eventError;
+    }
+
+    hobbies = (hobbyRows || []).map(function(hobby) {
+        return {
+            id: hobby.id,
+            title: hobby.title,
+            description: hobby.description,
+            imageUrl: hobby.image_url || "",
+            events: (eventRows || []).filter(function(event) {
+                return event.hobby_id === hobby.id;
+            }).map(function(event) {
+                return {
+                    id: event.share_id || event.id,
+                    title: event.title,
+                    location: event.location,
+                    mapQuery: event.map_query || "",
+                    mapUrl: event.map_url || "",
+                    dateTime: event.starts_at ? event.starts_at.slice(0, 16) : ""
+                };
+            })
+        };
+    });
+    renderHobbies();
+}
+
+async function syncHobbiesToSupabase() {
+    if (!currentUser) {
+        return;
+    }
+
+    const { error: deleteError } = await hobbyHubSupabase
+        .from("hobbies")
+        .delete()
+        .eq("user_id", currentUser.id);
+
+    if (deleteError) {
+        throw deleteError;
+    }
+
+    if (hobbies.length === 0) {
+        return;
+    }
+
+    const { data: savedHobbies, error: hobbyError } = await hobbyHubSupabase
+        .from("hobbies")
+        .insert(hobbies.map(function(hobby) {
+            return {
+                user_id: currentUser.id,
+                title: hobby.title,
+                description: hobby.description,
+                image_url: hobby.imageUrl || null
+            };
+        }))
+        .select("id,title");
+
+    if (hobbyError) {
+        throw hobbyError;
+    }
+
+    const eventsToInsert = [];
+    savedHobbies.forEach(function(savedHobby) {
+        const localHobby = hobbies.find(function(hobby) {
+            return hobby.title === savedHobby.title;
+        });
+        if (!localHobby) {
+            return;
+        }
+        localHobby.events.forEach(function(event) {
+            eventsToInsert.push({
+                user_id: currentUser.id,
+                hobby_id: savedHobby.id,
+                title: event.title,
+                hobby_title: localHobby.title,
+                location: event.location,
+                map_query: event.mapQuery || "",
+                map_url: event.mapUrl || "",
+                starts_at: event.dateTime || null,
+                image_url: localHobby.imageUrl || null,
+                is_public: true
+            });
+        });
+    });
+
+    if (eventsToInsert.length > 0) {
+        const { error: eventError } = await hobbyHubSupabase.from("events").insert(eventsToInsert);
+        if (eventError) {
+            throw eventError;
+        }
+    }
 }
 
 function formatDateTime(dateTime) {
@@ -612,14 +737,60 @@ function initializePage() {
 }
 
 async function signIn(email, password) {
-  const { data, error } = await hobbyHubSupabase.auth.signInWithPassword({
-    email,
-    password
-  });
-
-  console.log(data, error);
-  return error;
+    const { error } = await hobbyHubSupabase.auth.signInWithPassword({ email, password });
+    if (error) {
+        authStatus.textContent = error.message;
+    }
+    return error;
 }
+
+async function handleSignUp() {
+    const email = authEmailInput.value.trim();
+    const password = authPasswordInput.value;
+    const { error } = await hobbyHubSupabase.auth.signUp({ email, password });
+    authStatus.textContent = error ? error.message : "Check your email to confirm the account.";
+}
+
+async function handleAuthState(session) {
+    currentUser = session ? session.user : null;
+    authForm.hidden = Boolean(currentUser);
+    signedInControls.hidden = !currentUser;
+    document.getElementById("hobby-form").hidden = !currentUser;
+
+    if (currentUser) {
+        accountEmail.textContent = currentUser.email;
+        authStatus.textContent = "Signed in.";
+        try {
+            await loadHobbiesFromSupabase();
+        } catch (error) {
+            authStatus.textContent = "Unable to load saved hobbies: " + error.message;
+        }
+    } else {
+        authStatus.textContent = "";
+        hobbies = loadHobbies();
+        initializePage();
+    }
+}
+
+authForm.addEventListener("submit", function(event) {
+    event.preventDefault();
+    signIn(authEmailInput.value.trim(), authPasswordInput.value);
+});
+signUpButton.addEventListener("click", handleSignUp);
+signOutButton.addEventListener("click", async function() {
+    const { error } = await hobbyHubSupabase.auth.signOut();
+    if (error) {
+        authStatus.textContent = error.message;
+    }
+});
+
+hobbyHubSupabase.auth.onAuthStateChange(function(_event, session) {
+    handleAuthState(session);
+});
+
+hobbyHubSupabase.auth.getSession().then(function(result) {
+    handleAuthState(result.data.session);
+});
 
 window.addEventListener("hashchange", initializePage);
 initializePage();

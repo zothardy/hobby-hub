@@ -28,6 +28,14 @@ body { margin: 0; padding: 10px; color: var(--text); font-family: Arial, sans-se
 #hobbyhub { font-size: 32px; margin: 0; }
 #hobbyhub a { color: var(--text); text-decoration: none; }
 #hobbyhub a:hover { color: var(--accent); }
+ .header-controls { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 12px; }
+.account-controls { padding-left: 12px; border-left: 1px solid var(--border); }
+.auth-form, .signed-in-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.auth-form label { font-size: 12px; }
+.auth-form input { width: 150px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; color: var(--text); background: var(--surface); }
+.auth-actions { display: flex; gap: 6px; }
+.auth-status { max-width: 320px; margin: 6px 0 0; color: var(--muted-text); font-size: 12px; }
+.signed-in-controls span { color: var(--muted-text); font-size: 13px; }
 .appearance-controls { display: flex; align-items: center; gap: 8px; }
 .appearance-controls label { font-size: 14px; font-weight: bold; }
 .appearance-button, .scheme-select { min-height: 38px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; color: var(--text); background: var(--surface); font: inherit; }
@@ -102,6 +110,9 @@ h2 { margin: 0 0 6px; }
 
 @media (max-width: 640px) {
     .page-header { align-items: flex-start; }
+    .header-controls { width: 100%; align-items: flex-start; }
+    .account-controls { width: 100%; padding-left: 0; border-left: 0; }
+    .auth-form input { width: 100%; }
     .appearance-controls { width: 100%; flex-wrap: wrap; }
     .hobby-form, .event-form { grid-template-columns: 1fr; }
     .map-search-row { grid-template-columns: 1fr; }
