@@ -2,9 +2,51 @@ create extension if not exists pgcrypto;
 
 create table if not exists public.profiles (
     id uuid primary key references auth.users(id) on delete cascade,
-    username text not null unique check (username ~ '^[A-Za-z0-9_]{3,30}$'),
+    username text,
     created_at timestamptz not null default now()
 );
+
+alter table public.profiles
+    add column if not exists username text;
+
+do $$
+begin
+    if exists (
+        select 1
+        from information_schema.columns
+        where table_schema = 'public'
+          and table_name = 'profiles'
+          and column_name = 'display_name'
+    ) then
+        execute 'update public.profiles p set username = lower(regexp_replace(coalesce(p.username, p.display_name, ''''''), ''[^A-Za-z0-9_]'', '''', ''g'')) where p.username is null';
+    end;
+end;
+$$;
+
+insert into public.profiles (id, username)
+select
+    users.id,
+    'user_' || substr(replace(users.id::text, '-', ''), 1, 12)
+from auth.users users
+where not exists (
+    select 1 from public.profiles profiles where profiles.id = users.id
+);
+
+update public.profiles
+set username = 'user_' || substr(replace(id::text, '-', ''), 1, 12)
+where username is null or username = '';
+
+alter table public.profiles
+    alter column username set not null;
+
+create unique index if not exists profiles_username_key
+    on public.profiles (lower(username));
+
+alter table public.profiles
+    drop constraint if exists profiles_username_format;
+alter table public.profiles
+    add constraint profiles_username_format
+    check (username ~ '^[A-Za-z0-9_]{3,30}$');
 
 alter table public.profiles enable row level security;
 
@@ -53,9 +95,19 @@ returns trigger
 language plpgsql
 security definer set search_path = public
 as $$
+declare
+    next_username text;
 begin
+    next_username := lower(regexp_replace(
+        coalesce(nullif(new.raw_user_meta_data->>'username', ''), split_part(new.email, '@', 1)),
+        '[^A-Za-z0-9_]', '', 'g'
+    ));
+    if char_length(next_username) < 3 then
+        next_username := 'user_' || substr(replace(new.id::text, '-', ''), 1, 12);
+    end if;
+
     insert into public.profiles (id, username)
-    values (new.id, coalesce(new.raw_user_meta_data->>'username', split_part(new.email, '@', 1)))
+    values (new.id, left(next_username, 30))
     on conflict (id) do update set username = excluded.username;
     return new;
 end;
