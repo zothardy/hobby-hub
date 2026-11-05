@@ -8,6 +8,14 @@ const appearanceStorageKey = "hobbyHubAppearance";
 const themeToggle = document.getElementById("theme-toggle");
 const colorSchemeSelect = document.getElementById("color-scheme");
 
+const supabaseUrl = "https://qceemfcukiqysbshipao.supabase.co";
+const supabaseAnonKey = "sb_publishable_4m08UL06yaVSmfOosnJA5Q_37zwACJK";
+
+const supabase = window.supabase.createClient(
+    supabaseUrl,
+    supabaseAnonKey
+);
+
 const appearance = loadAppearance();
 applyAppearance();
 
