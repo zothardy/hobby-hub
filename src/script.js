@@ -11,7 +11,7 @@ const colorSchemeSelect = document.getElementById("color-scheme");
 const supabaseUrl = "https://qceemfcukiqysbshipao.supabase.co";
 const supabaseAnonKey = "sb_publishable_4m08UL06yaVSmfOosnJA5Q_37zwACJK";
 
-const supabase = window.supabase.createClient(
+const hobbyHubSupabase = window.supabase.createClient(
     supabaseUrl,
     supabaseAnonKey
 );
