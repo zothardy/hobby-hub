@@ -743,6 +743,7 @@ function renderHobbies() {
 }
 
 const testHobbyButton = document.getElementById("test-hobby-button");
+const removeAllHobbiesButton = document.getElementById("remove-all-hobbies-button");
 let testHobbyIndex = 0;
 if (testHobbyButton) {
     testHobbyButton.addEventListener("click", function() {
@@ -751,6 +752,13 @@ if (testHobbyButton) {
         hobbyDescriptionInput.value = testHobby.description;
         hobbyImageInput.value = testHobby.imageUrl;
         testHobbyIndex += 1;
+    });
+}
+if (removeAllHobbiesButton) {
+    removeAllHobbiesButton.addEventListener("click", function() {
+        hobbies = [];
+        saveHobbies();
+        renderHobbies();
     });
 }
 

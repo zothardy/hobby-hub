@@ -95,6 +95,8 @@ h2 { margin: 0 0 6px; }
 .add-button, .remove-button { border: 0; }
 .add-button { color: var(--accent-text); background: var(--accent); }
 .add-button:hover { background: var(--accent-hover); }
+.remove-button { color: var(--accent-text); background: #a94442; }
+.remove-button:hover { background: #c45b58; }
 .hobby-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 18px 0 0; padding: 0; list-style: none; }
 .hobby-card, .event-landing { background: var(--surface); border: 1px solid var(--border); }
 .hobby-card { display: block; padding: 16px; border-radius: 10px; transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
