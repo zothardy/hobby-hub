@@ -19,7 +19,7 @@ begin
           and column_name = 'display_name'
     ) then
         execute 'update public.profiles p set username = lower(regexp_replace(coalesce(p.username, p.display_name, ''''''), ''[^A-Za-z0-9_]'', '''', ''g'')) where p.username is null';
-    end;
+    end if;
 end;
 $$;
 
