@@ -46,6 +46,7 @@ body { margin: 0; padding: 10px; color: var(--text); font-family: Arial, sans-se
 main { max-width: 900px; margin: 0 auto; }
 section { margin-bottom: 36px; }
 .section-heading { margin-bottom: 20px; }
+.sample-profile-message { width: fit-content; max-width: 520px; margin: 14px 0 0; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px 8px 8px 2px; color: var(--text); background: var(--surface); box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08); font-weight: bold; }
 h2 { margin: 0 0 6px; }
 .section-description, .event-card p, .event-landing p, .hobby-details p { margin-top: 0; color: var(--muted-text); }
 .hobby-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; gap: 12px; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }

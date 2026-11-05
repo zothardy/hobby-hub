@@ -68,18 +68,45 @@ colorSchemeSelect.addEventListener("change", function() {
 
 const sampleHobbies = [
     {
+        id: "sample-hiking",
         title: "Hiking",
-        description: "Exploring local trails and enjoying the outdoors.",
-        events: []
+        description: "Weekend hikes are a chance to reset, explore nearby trails, and notice the changing seasons.\n\nFavorite outings include ridge walks, shaded canyon trails, waterfall loops, and easy sunrise routes. Gear stays simple: comfortable shoes, plenty of water, snacks, a map, sun protection, and a willingness to turn around when the weather changes.\n\nA good goal is to build consistency without making every hike competitive. Some days are for distance, while others are for birdwatching, photography, geology, or walking slowly with friends.",
+        imageUrl: "https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=1200&q=80",
+        readOnly: true,
+        events: [
+            {
+                id: "sample-hiking-event",
+                title: "Saturday Morning Trail Walk",
+                location: "The Canyon Trail",
+                mapQuery: "Crystal Cove State Park, Laguna Beach, CA",
+                mapUrl: "https://www.google.com/maps/search/?api=1&query=Crystal+Cove+State+Park,+Laguna+Beach,+CA",
+                dateTime: "2026-11-14T08:00"
+            }
+        ]
     },
     {
+        id: "sample-watercolor",
         title: "Watercolor painting",
-        description: "Practicing landscape paintings and color mixing.",
-        events: []
+        description: "Watercolor is a relaxed way to study light, color, and composition without needing a large studio. Simple studies often begin with a small palette, a little reference photo, and one subject that feels interesting for the day.\n\nThis hobby space is for botanical sketches, neighborhood scenes, quick color tests, travel journal pages, and intentional experiments with blooms and washes. Mistakes can become texture, and unfinished studies are useful practice rather than failed projects.",
+        imageUrl: "https://images.unsplash.com/photo-1547891654-e66ed7ebb968?auto=format&fit=crop&w=1200&q=80",
+        readOnly: true,
+        events: [
+            {
+                id: "sample-watercolor-event",
+                title: "Paint-and-Sketch Morning",
+                location: "The Garden Studio",
+                mapQuery: "Fullerton Arboretum, Fullerton, CA",
+                mapUrl: "https://www.google.com/maps/search/?api=1&query=Fullerton+Arboretum,+Fullerton,+CA",
+                dateTime: "2026-11-15T10:00"
+            }
+        ]
     },
     {
+        id: "sample-dungeons-dragons",
         title: "Dungeons & Dragons",
-        description: "Playing in a weekly tabletop campaign with friends.",
+        description: "A cooperative tabletop campaign built around storytelling, improvisation, and shared laughs. Sessions mix exploration, character choices, puzzles, memorable non-player characters, and spontaneous moments that become part of the group's history.\n\nCharacter notes live alongside session summaries, house rules, favorite spells, maps, snacks, and plans for the next adventure. The goal is not simply to win; it is to build a welcoming world that everyone looks forward to visiting.",
+        imageUrl: "https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=1200&q=80",
+        readOnly: true,
         events: [
             {
                 id: "garden-grove-dd",
@@ -493,6 +520,7 @@ function renderEvent(event, hobby, hobbyIndex, eventIndex) {
     removeButton.className = "remove-button";
     removeButton.type = "button";
     removeButton.textContent = "Remove";
+    removeButton.hidden = Boolean(hobby.readOnly && !currentUser);
     removeButton.addEventListener("click", function() {
         hobby.events.splice(eventIndex, 1);
         saveHobbies();
@@ -636,6 +664,7 @@ function renderHobbyDetail(hobbyIndex) {
     removeButton.className = "remove-button hobby-remove-button";
     removeButton.type = "button";
     removeButton.textContent = "Remove hobby";
+    removeButton.hidden = Boolean(hobby.readOnly && !currentUser);
     removeButton.addEventListener("click", function() {
         hobbies.splice(hobbyIndex, 1);
         saveHobbies();
@@ -643,8 +672,13 @@ function renderHobbyDetail(hobbyIndex) {
         renderHobbies();
     });
 
-    eventsDropdown.append(eventsHeading, eventList, createEventForm(hobby, hobbyIndex));
-    const detailItems = [coverImage, title, description, removeButton, eventsDropdown];
+    eventsDropdown.append(eventsHeading, eventList);
+    if (!hobby.readOnly || currentUser) {
+        eventsDropdown.append(createEventForm(hobby, hobbyIndex));
+    }
+    const detailItems = (!hobby.readOnly || currentUser)
+        ? [coverImage, title, description, removeButton, eventsDropdown]
+        : [coverImage, title, description, eventsDropdown];
     content.replaceChildren(...detailItems.filter(function(element) {
         return element !== coverImage || hobby.imageUrl;
     }));
@@ -766,6 +800,11 @@ async function handleAuthState(session) {
     signedInControls.hidden = !currentUser;
     document.getElementById("hobby-form").hidden = !currentUser;
 
+    const sampleProfileMessage = document.getElementById("sample-profile-message");
+    if (sampleProfileMessage) {
+        sampleProfileMessage.hidden = !currentUser ? false : true;
+    }
+
     if (currentUser) {
         accountEmail.textContent = currentUser.email;
         authStatus.textContent = "Signed in.";
@@ -776,6 +815,10 @@ async function handleAuthState(session) {
         }
     } else {
         authStatus.textContent = "";
+        const sampleProfileMessage = document.getElementById("sample-profile-message");
+        if (sampleProfileMessage) {
+            sampleProfileMessage.hidden = false;
+        }
         hobbies = sampleHobbies.map(function(hobby) {
             return {
                 ...hobby,
