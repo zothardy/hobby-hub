@@ -13,7 +13,7 @@ const signOutButton = document.getElementById("sign-out-button");
 const authNavigation = document.getElementById("auth-navigation");
 const authStatus = document.getElementById("auth-status");
 const signedInControls = document.getElementById("signed-in-controls");
-const accountEmail = document.getElementById("account-email");
+const accountProfileLink = document.getElementById("account-profile-link");
 
 const supabaseUrl = "https://qceemfcukiqysbshipao.supabase.co";
 const supabaseAnonKey = "sb_publishable_4m08UL06yaVSmfOosnJA5Q_37zwACJK";
@@ -755,10 +755,21 @@ function initializePage() {
         document.getElementById("hobbies-view").hidden = true;
         document.getElementById("hobby-detail").hidden = true;
         document.getElementById("event-landing").hidden = true;
+        document.getElementById("profile-page").hidden = true;
         document.getElementById("welcome-landing").hidden = true;
         return;
     }
 
+    if (hashParams.has("profile") && currentUser) {
+        document.getElementById("hobbies-view").hidden = true;
+        document.getElementById("hobby-detail").hidden = true;
+        document.getElementById("event-landing").hidden = true;
+        document.getElementById("welcome-landing").hidden = true;
+        document.getElementById("profile-page").hidden = false;
+        return;
+    }
+
+    document.getElementById("profile-page").hidden = true;
     document.getElementById("welcome-landing").hidden = Boolean(currentUser);
     loginPage.hidden = true;
     signupPage.hidden = true;
@@ -840,7 +851,19 @@ async function handleAuthState(session) {
     }
 
     if (currentUser) {
-        accountEmail.textContent = currentUser.email;
+        const fallbackUsername = currentUser.user_metadata && currentUser.user_metadata.username
+            ? currentUser.user_metadata.username
+            : currentUser.email;
+        accountProfileLink.textContent = fallbackUsername;
+        const { data: profile, error: profileError } = await hobbyHubSupabase
+            .from("profiles")
+            .select("username")
+            .eq("id", currentUser.id)
+            .maybeSingle();
+        if (!profileError && profile && profile.username) {
+            accountProfileLink.textContent = profile.username;
+        }
+
         authStatus.textContent = "Signed in.";
         const route = new URLSearchParams(window.location.hash.slice(1));
         if (route.has("login") || route.has("signup")) {
