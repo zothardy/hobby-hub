@@ -781,7 +781,16 @@ signOutButton.addEventListener("click", async function() {
     const { error } = await hobbyHubSupabase.auth.signOut();
     if (error) {
         authStatus.textContent = error.message;
+        return;
     }
+
+    currentUser = null;
+    authForm.hidden = false;
+    signedInControls.hidden = true;
+    document.getElementById("hobby-form").hidden = true;
+    authStatus.textContent = "Signed out.";
+    hobbies = loadHobbies();
+    window.requestAnimationFrame(initializePage);
 });
 
 hobbyHubSupabase.auth.onAuthStateChange(function(_event, session) {
