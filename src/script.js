@@ -119,34 +119,43 @@ let hobbies = loadHobbies();
 let currentUser = null;
 
 function saveHobbies() {
-    localStorage.setItem(hobbiesStorageKey, JSON.stringify(hobbies));
-
     if (currentUser) {
         syncHobbiesToSupabase().catch(function(error) {
             authStatus.textContent = "Unable to save hobbies: " + error.message;
         });
+        return;
     }
+
+    localStorage.setItem(hobbiesStorageKey, JSON.stringify(hobbies));
 }
 
 async function loadHobbiesFromSupabase() {
+    const loadingUserId = currentUser.id;
     const { data: hobbyRows, error: hobbyError } = await hobbyHubSupabase
         .from("hobbies")
         .select("id,title,description,image_url")
-        .eq("user_id", currentUser.id)
+        .eq("user_id", loadingUserId)
         .order("created_at", { ascending: true });
 
     if (hobbyError) {
         throw hobbyError;
     }
+    if (!currentUser || currentUser.id !== loadingUserId) {
+        return;
+    }
 
     const { data: eventRows, error: eventError } = await hobbyHubSupabase
         .from("events")
         .select("id,share_id,hobby_id,title,hobby_title,location,map_query,map_url,starts_at,image_url,is_public")
-        .eq("user_id", currentUser.id)
+        .eq("user_id", loadingUserId)
         .order("created_at", { ascending: true });
 
     if (eventError) {
         throw eventError;
+    }
+
+    if (!currentUser || currentUser.id !== loadingUserId) {
+        return;
     }
 
     hobbies = (hobbyRows || []).map(function(hobby) {
@@ -767,7 +776,14 @@ async function handleAuthState(session) {
         }
     } else {
         authStatus.textContent = "";
-        hobbies = loadHobbies();
+        hobbies = sampleHobbies.map(function(hobby) {
+            return {
+                ...hobby,
+                events: hobby.events.map(function(event) {
+                    return { ...event };
+                })
+            };
+        });
         initializePage();
     }
 }
@@ -789,7 +805,14 @@ signOutButton.addEventListener("click", async function() {
     signedInControls.hidden = true;
     document.getElementById("hobby-form").hidden = true;
     authStatus.textContent = "Signed out.";
-    hobbies = loadHobbies();
+    hobbies = sampleHobbies.map(function(hobby) {
+        return {
+            ...hobby,
+            events: hobby.events.map(function(event) {
+                return { ...event };
+            })
+        };
+    });
     window.requestAnimationFrame(initializePage);
 });
 
