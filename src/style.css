@@ -41,10 +41,28 @@ body { margin: 0; padding: 10px; color: var(--text); font-family: Arial, sans-se
 .appearance-controls { display: flex; align-items: center; gap: 8px; }
 .appearance-controls label { font-size: 14px; font-weight: bold; }
 .appearance-button, .scheme-select { min-height: 38px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; color: var(--text); background: var(--surface); font: inherit; }
-.appearance-button { cursor: pointer; }
+.appearance-button { cursor: pointer; transition: transform 120ms ease, background 120ms ease, border-color 120ms ease; }
+.appearance-button:hover { border-color: var(--accent); transform: translateY(-1px); }
+.appearance-button:active { transform: translateY(1px); }
 .theme-icon-button { width: 38px; padding: 4px; font-size: 22px; line-height: 1; }
 main { max-width: 900px; margin: 0 auto; }
 section { margin-bottom: 36px; }
+.welcome-landing { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(220px, 0.5fr); gap: 28px; padding: 36px; border: 1px solid var(--border); border-radius: 8px; background: linear-gradient(135deg, var(--surface) 0%, var(--surface-muted) 100%); }
+.welcome-landing::after { content: ""; position: absolute; right: -40px; bottom: -70px; width: 180px; height: 180px; border: 28px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; pointer-events: none; }
+.welcome-eyebrow { margin: 0 0 10px; color: var(--accent); font-size: 13px; font-weight: bold; text-transform: uppercase; }
+.welcome-copy h2 { max-width: 660px; margin-bottom: 14px; font-size: clamp(28px, 5vw, 48px); line-height: 1.05; }
+.welcome-description { max-width: 620px; margin: 0; color: var(--muted-text); font-size: 17px; line-height: 1.65; }
+.welcome-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+.primary-cta, .secondary-cta { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 11px 16px; border-radius: 6px; font: inherit; font-weight: bold; text-decoration: none; transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease; }
+.primary-cta { border: 0; color: var(--accent-text); background: var(--accent); box-shadow: 0 7px 18px color-mix(in srgb, var(--accent) 28%, transparent); cursor: pointer; }
+.secondary-cta { border: 1px solid var(--border); color: var(--text); background: var(--surface); }
+.primary-cta:hover, .secondary-cta:hover { transform: translateY(-2px); }
+.primary-cta:hover { background: var(--accent-hover); box-shadow: 0 10px 22px color-mix(in srgb, var(--accent) 38%, transparent); }
+.primary-cta:active, .secondary-cta:active { transform: translateY(1px); }
+.primary-cta:focus-visible, .secondary-cta:focus-visible, button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 42%, transparent); outline-offset: 2px; }
+.welcome-details { position: relative; z-index: 1; display: grid; align-content: center; gap: 10px; }
+.welcome-details div { display: grid; gap: 2px; padding: 14px; border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--surface) 88%, transparent); }
+.welcome-details span { color: var(--muted-text); font-size: 13px; line-height: 1.4; }
 .section-heading { margin-bottom: 20px; }
 .sample-profile-message { width: fit-content; max-width: 520px; margin: 14px 0 0; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px 8px 8px 2px; color: var(--text); background: var(--surface); box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08); font-weight: bold; }
 h2 { margin: 0 0 6px; }
@@ -118,6 +136,8 @@ h2 { margin: 0 0 6px; }
     .auth-form { justify-content: flex-start; }
     .auth-form input { width: 100%; }
     .appearance-controls { width: 100%; flex-wrap: wrap; }
+    .welcome-landing { grid-template-columns: 1fr; padding: 24px; }
+    .welcome-details { grid-template-columns: 1fr; }
     .hobby-form, .event-form { grid-template-columns: 1fr; }
     .map-search-row { grid-template-columns: 1fr; }
 }

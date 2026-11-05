@@ -799,6 +799,7 @@ async function handleAuthState(session) {
     authForm.hidden = Boolean(currentUser);
     signedInControls.hidden = !currentUser;
     document.getElementById("hobby-form").hidden = !currentUser;
+    document.getElementById("welcome-landing").hidden = Boolean(currentUser);
 
     const sampleProfileMessage = document.getElementById("sample-profile-message");
     if (sampleProfileMessage) {
@@ -836,6 +837,10 @@ authForm.addEventListener("submit", function(event) {
     signIn(authEmailInput.value.trim(), authPasswordInput.value);
 });
 signUpButton.addEventListener("click", handleSignUp);
+document.getElementById("welcome-sign-in-button").addEventListener("click", function() {
+    authEmailInput.focus();
+    authEmailInput.scrollIntoView({ behavior: "smooth", block: "center" });
+});
 signOutButton.addEventListener("click", async function() {
     const { error } = await hobbyHubSupabase.auth.signOut();
     if (error) {
