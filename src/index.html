@@ -23,16 +23,10 @@
                 </select>
             </div>
             <div class="account-controls" id="account-controls">
-                <form id="auth-form" class="auth-form">
-                    <label for="auth-email">Email</label>
-                    <input id="auth-email" type="email" autocomplete="email" required>
-                    <label for="auth-password">Password</label>
-                    <input id="auth-password" type="password" autocomplete="current-password" required minlength="6">
-                    <div class="auth-actions">
-                        <button id="sign-in-button" class="appearance-button" type="submit">Sign in</button>
-                        <button id="sign-up-button" class="appearance-button" type="button">Sign up</button>
-                    </div>
-                </form>
+                <nav id="auth-navigation" class="auth-navigation" aria-label="Account">
+                    <a id="log-in-link" class="appearance-button account-link" href="#login">Log in</a>
+                    <a id="create-profile-link" class="primary-account-link" href="#signup">Create profile</a>
+                </nav>
                 <div id="signed-in-controls" class="signed-in-controls" hidden>
                     <span id="account-email"></span>
                     <button id="sign-out-button" class="appearance-button" type="button">Sign out</button>
@@ -43,6 +37,51 @@
     </header>
 
     <main>
+        <section id="login-page" class="account-page" hidden aria-labelledby="login-title">
+            <div class="account-page-copy">
+                <p class="welcome-eyebrow">Welcome back</p>
+                <h2 id="login-title">Log in to HobbyHub</h2>
+                <p>Pick up where you left off and spend more time on the hobbies you love.</p>
+            </div>
+            <form id="login-form" class="account-form">
+                <div class="form-field">
+                    <label for="login-email">Email</label>
+                    <input id="login-email" name="email" type="email" autocomplete="email" required>
+                </div>
+                <div class="form-field">
+                    <label for="login-password">Password</label>
+                    <input id="login-password" name="password" type="password" autocomplete="current-password" required minlength="6">
+                </div>
+                <button class="primary-cta" type="submit">Log in</button>
+                <a class="account-page-link" href="#signup">New here? Create a profile</a>
+            </form>
+        </section>
+
+        <section id="signup-page" class="account-page" hidden aria-labelledby="signup-title">
+            <div class="account-page-copy">
+                <p class="welcome-eyebrow">Make it yours</p>
+                <h2 id="signup-title">Create your HobbyHub profile</h2>
+                <p>Choose a username, save your hobbies, and start planning the good stuff.</p>
+            </div>
+            <form id="signup-form" class="account-form">
+                <div class="form-field">
+                    <label for="signup-username">Username</label>
+                    <input id="signup-username" name="username" type="text" minlength="3" maxlength="30" pattern="[A-Za-z0-9_]+" autocomplete="username" required>
+                    <small>3-30 letters, numbers, or underscores.</small>
+                </div>
+                <div class="form-field">
+                    <label for="signup-email">Email</label>
+                    <input id="signup-email" name="email" type="email" autocomplete="email" required>
+                </div>
+                <div class="form-field">
+                    <label for="signup-password">Password</label>
+                    <input id="signup-password" name="password" type="password" autocomplete="new-password" required minlength="6">
+                </div>
+                <button class="primary-cta" type="submit">Create profile</button>
+                <a class="account-page-link" href="#login">Already have a profile? Log in</a>
+            </form>
+        </section>
+
         <section id="event-landing" class="event-landing" hidden aria-labelledby="event-landing-title">
             <div id="event-landing-content"></div>
         </section>

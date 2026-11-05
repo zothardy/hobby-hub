@@ -7,11 +7,10 @@ const hobbiesStorageKey = "hobbyHubCurrentHobbies";
 const appearanceStorageKey = "hobbyHubAppearance";
 const themeToggle = document.getElementById("theme-toggle");
 const colorSchemeSelect = document.getElementById("color-scheme");
-const authForm = document.getElementById("auth-form");
-const signUpButton = document.getElementById("sign-up-button");
+const loginForm = document.getElementById("login-form");
+const signupForm = document.getElementById("signup-form");
 const signOutButton = document.getElementById("sign-out-button");
-const authEmailInput = document.getElementById("auth-email");
-const authPasswordInput = document.getElementById("auth-password");
+const authNavigation = document.getElementById("auth-navigation");
 const authStatus = document.getElementById("auth-status");
 const signedInControls = document.getElementById("signed-in-controls");
 const accountEmail = document.getElementById("account-email");
@@ -747,6 +746,22 @@ function addHobby(event) {
 
 function initializePage() {
     const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    const loginPage = document.getElementById("login-page");
+    const signupPage = document.getElementById("signup-page");
+    loginPage.hidden = !hashParams.has("login") || Boolean(currentUser);
+    signupPage.hidden = !hashParams.has("signup") || Boolean(currentUser);
+
+    if (hashParams.has("login") || hashParams.has("signup")) {
+        document.getElementById("hobbies-view").hidden = true;
+        document.getElementById("hobby-detail").hidden = true;
+        document.getElementById("event-landing").hidden = true;
+        document.getElementById("welcome-landing").hidden = true;
+        return;
+    }
+
+    document.getElementById("welcome-landing").hidden = Boolean(currentUser);
+    loginPage.hidden = true;
+    signupPage.hidden = true;
 
     if (hashParams.has("hobby")) {
         const hobbyTitle = hashParams.get("hobby");
@@ -787,16 +802,24 @@ async function signIn(email, password) {
     return error;
 }
 
-async function handleSignUp() {
-    const email = authEmailInput.value.trim();
-    const password = authPasswordInput.value;
-    const { error } = await hobbyHubSupabase.auth.signUp({ email, password });
+async function handleSignUp(event) {
+    event.preventDefault();
+    const formData = new FormData(signupForm);
+    const username = formData.get("username").trim().toLowerCase();
+    const email = formData.get("email").trim();
+    const password = formData.get("password");
+    const { data, error } = await hobbyHubSupabase.auth.signUp({
+        email: email,
+        password: password,
+        options: { data: { username: username } }
+    });
+
     authStatus.textContent = error ? error.message : "Check your email to confirm the account.";
 }
 
 async function handleAuthState(session) {
     currentUser = session ? session.user : null;
-    authForm.hidden = Boolean(currentUser);
+    authNavigation.hidden = Boolean(currentUser);
     signedInControls.hidden = !currentUser;
     document.getElementById("hobby-form").hidden = !currentUser;
     document.getElementById("welcome-landing").hidden = Boolean(currentUser);
@@ -809,6 +832,10 @@ async function handleAuthState(session) {
     if (currentUser) {
         accountEmail.textContent = currentUser.email;
         authStatus.textContent = "Signed in.";
+        const route = new URLSearchParams(window.location.hash.slice(1));
+        if (route.has("login") || route.has("signup")) {
+            window.location.hash = "";
+        }
         try {
             await loadHobbiesFromSupabase();
         } catch (error) {
@@ -832,14 +859,13 @@ async function handleAuthState(session) {
     }
 }
 
-authForm.addEventListener("submit", function(event) {
+loginForm.addEventListener("submit", function(event) {
     event.preventDefault();
-    signIn(authEmailInput.value.trim(), authPasswordInput.value);
+    signIn(document.getElementById("login-email").value.trim(), document.getElementById("login-password").value);
 });
-signUpButton.addEventListener("click", handleSignUp);
+signupForm.addEventListener("submit", handleSignUp);
 document.getElementById("welcome-sign-in-button").addEventListener("click", function() {
-    authEmailInput.focus();
-    authEmailInput.scrollIntoView({ behavior: "smooth", block: "center" });
+    window.location.hash = "signup";
 });
 signOutButton.addEventListener("click", async function() {
     const { error } = await hobbyHubSupabase.auth.signOut();
@@ -849,7 +875,7 @@ signOutButton.addEventListener("click", async function() {
     }
 
     currentUser = null;
-    authForm.hidden = false;
+    authNavigation.hidden = false;
     signedInControls.hidden = true;
     document.getElementById("hobby-form").hidden = true;
     authStatus.textContent = "Signed out.";

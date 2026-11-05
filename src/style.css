@@ -36,6 +36,11 @@ body { margin: 0; padding: 10px; color: var(--text); font-family: Arial, sans-se
 .auth-form label { font-size: 12px; }
 .auth-form input { width: 150px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; color: var(--text); background: var(--surface); }
 .auth-actions { display: flex; gap: 6px; }
+.auth-navigation { display: flex; align-items: center; gap: 8px; }
+.account-link, .primary-account-link { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; box-sizing: border-box; padding: 8px 12px; border-radius: 6px; text-decoration: none; font-weight: bold; }
+.account-link { border: 1px solid var(--border); color: var(--text); background: var(--surface); }
+.primary-account-link { border: 1px solid var(--accent); color: var(--accent-text); background: var(--accent); }
+.account-link:hover, .primary-account-link:hover { transform: translateY(-1px); }
 .auth-status { max-width: 320px; margin: 6px 0 0; color: var(--muted-text); font-size: 12px; }
 .signed-in-controls span { color: var(--muted-text); font-size: 13px; }
 .appearance-controls { display: flex; align-items: center; gap: 8px; }
@@ -47,6 +52,14 @@ body { margin: 0; padding: 10px; color: var(--text); font-family: Arial, sans-se
 .theme-icon-button { width: 38px; padding: 4px; font-size: 22px; line-height: 1; }
 main { max-width: 900px; margin: 0 auto; }
 section { margin-bottom: 36px; }
+.account-page { width: min(680px, 100%); margin: 36px auto; padding: 32px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 0.8fr); gap: 32px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.account-page-copy h2 { font-size: clamp(28px, 4vw, 42px); line-height: 1.08; }
+.account-page-copy p:last-child { color: var(--muted-text); line-height: 1.6; }
+.account-form { display: grid; align-content: start; gap: 14px; }
+.account-form small { color: var(--muted-text); }
+.account-form .primary-cta { width: 100%; }
+.account-page-link { color: var(--accent); text-align: center; text-decoration: none; }
+.account-page-link:hover { text-decoration: underline; }
 .welcome-landing { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(220px, 0.5fr); gap: 28px; padding: 36px; border: 1px solid var(--border); border-radius: 8px; background: linear-gradient(135deg, var(--surface) 0%, var(--surface-muted) 100%); }
 .welcome-landing::after { content: ""; position: absolute; right: -40px; bottom: -70px; width: 180px; height: 180px; border: 28px solid color-mix(in srgb, var(--accent) 22%, transparent); border-radius: 50%; pointer-events: none; }
 .welcome-eyebrow { margin: 0 0 10px; color: var(--accent); font-size: 13px; font-weight: bold; text-transform: uppercase; }
@@ -137,6 +150,7 @@ h2 { margin: 0 0 6px; }
     .auth-form input { width: 100%; }
     .appearance-controls { width: 100%; flex-wrap: wrap; }
     .welcome-landing { grid-template-columns: 1fr; padding: 24px; }
+    .account-page { grid-template-columns: 1fr; margin: 20px auto; padding: 24px; }
     .welcome-details { grid-template-columns: 1fr; }
     .hobby-form, .event-form { grid-template-columns: 1fr; }
     .map-search-row { grid-template-columns: 1fr; }
