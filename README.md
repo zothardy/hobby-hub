@@ -17,11 +17,5 @@
 - Share an event using a HobbyHub landing-page link. The landing page displays the event name, hobby, date, time, location, and map link.
 - Remove events independently from their parent hobby.
 
-## Running locally
-From the project root, run:
-
-```sh
-python3 -m http.server 4173 --directory src
-```
-
-Then open `http://localhost:4173`.
+## To Run the Project
+Simply visit: https://zothardy.github.io/hobby-hub/
