@@ -107,7 +107,7 @@ function saveHobbies() {
 
 function formatDateTime(dateTime) {
     if (!dateTime) {
-        return "Date and time not set";
+        return "Date not set";
     }
 
     return new Date(dateTime).toLocaleString([], {
@@ -158,7 +158,8 @@ function getEventPageUrl(hobby, event) {
         t: event.title,
         l: event.location,
         d: event.dateTime,
-        q: getMapQuery(event)
+        q: getMapQuery(event),
+        i: hobby.imageUrl || ""
     };
     const url = new URL(window.location.href);
     url.search = "";
@@ -197,7 +198,7 @@ function createEventForm(hobby, hobbyIndex) {
     const fields = [
         { className: "event-title-field", label: "Event name", name: "title", type: "text", required: true },
         { className: "event-location-field", label: "Location", name: "location", type: "text", required: true },
-        { className: "event-date-field", label: "Date and time", name: "dateTime", type: "datetime-local", required: true }
+        { className: "event-date-field", label: "Date and time (optional)", name: "dateTime", type: "datetime-local", required: false }
     ];
 
     fields.forEach(function(field) {
@@ -263,11 +264,25 @@ function createEventForm(hobby, hobbyIndex) {
         }
     });
 
+    const formActions = document.createElement("div");
+    const testButton = document.createElement("button");
     const submitButton = document.createElement("button");
+    formActions.className = "form-actions";
+    testButton.className = "test-button";
+    testButton.type = "button";
+    testButton.textContent = "Test";
+    testButton.addEventListener("click", function() {
+        form.elements.title.value = "Board Game Night";
+        form.elements.location.value = "The Park";
+        form.elements.dateTime.value = "2026-11-07T18:00";
+        form.elements.mapQuery.value = "Garden Grove Regional Park, Garden Grove, CA";
+        updateMapPreview();
+    });
     submitButton.className = "add-button";
     submitButton.type = "submit";
     submitButton.textContent = "Add event";
-    form.append(submitButton);
+    formActions.append(testButton, submitButton);
+    form.append(formActions);
 
     form.addEventListener("submit", function(event) {
         event.preventDefault();
@@ -359,6 +374,7 @@ async function renderEventLanding() {
                 title: token.t,
                 location: token.l,
                 dateTime: token.d,
+                imageUrl: token.i || "",
                 mapUrl: "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(token.q || token.l || "")
             };
         } catch (error) {
@@ -379,6 +395,7 @@ async function renderEventLanding() {
     const hobbiesView = document.getElementById("hobbies-view");
     const landing = document.getElementById("event-landing");
     const content = document.getElementById("event-landing-content");
+    const coverImage = document.createElement("img");
     const eventTitle = document.createElement("h2");
     const hobbyName = document.createElement("p");
     const dateTime = document.createElement("p");
@@ -393,6 +410,11 @@ async function renderEventLanding() {
     hobbyName.textContent = params.hobby || "HobbyHub event";
     dateTime.textContent = formatDateTime(params.dateTime);
     location.textContent = params.location || "Location not provided";
+    if (params.imageUrl) {
+        coverImage.className = "landing-cover-image";
+        coverImage.src = params.imageUrl;
+        coverImage.alt = params.hobby || "Hobby cover image";
+    }
     mapLink.className = "map-link";
     mapLink.href = params.mapUrl || "https://maps.google.com/";
     mapLink.target = "_blank";
@@ -405,7 +427,10 @@ async function renderEventLanding() {
     backToHobbyLink.textContent = "Back to " + (params.hobby || "hobby");
     actions.append(backToHobbyLink, mapLink);
 
-    content.replaceChildren(eventTitle, hobbyName, dateTime, location, actions);
+    const landingItems = [coverImage, eventTitle, hobbyName, dateTime, location, actions];
+    content.replaceChildren(...landingItems.filter(function(element) {
+        return element !== coverImage || params.imageUrl;
+    }));
     document.title = params.title + " | HobbyHub";
     hobbiesView.hidden = true;
     landing.hidden = false;
@@ -440,6 +465,7 @@ function renderHobbyDetail(hobbyIndex) {
 
     const content = document.getElementById("hobby-detail-content");
     const title = document.createElement("h2");
+    const coverImage = document.createElement("img");
     const description = document.createElement("p");
     const removeButton = document.createElement("button");
     const eventsDropdown = document.createElement("details");
@@ -448,6 +474,12 @@ function renderHobbyDetail(hobbyIndex) {
 
     title.id = "hobby-detail-title";
     title.textContent = hobby.title;
+    if (hobby.imageUrl) {
+        coverImage.className = "detail-cover-image";
+        coverImage.src = hobby.imageUrl;
+        coverImage.alt = "";
+        coverImage.loading = "lazy";
+    }
     description.className = "hobby-description-full";
     description.textContent = hobby.description;
     eventsDropdown.className = "events-dropdown";
@@ -470,7 +502,10 @@ function renderHobbyDetail(hobbyIndex) {
     });
 
     eventsDropdown.append(eventsHeading, eventList, createEventForm(hobby, hobbyIndex));
-    content.replaceChildren(title, description, removeButton, eventsDropdown);
+    const detailItems = [coverImage, title, description, removeButton, eventsDropdown];
+    content.replaceChildren(...detailItems.filter(function(element) {
+        return element !== coverImage || hobby.imageUrl;
+    }));
     document.title = hobby.title + " | HobbyHub";
     document.getElementById("hobbies-view").hidden = true;
     document.getElementById("event-landing").hidden = true;
@@ -509,6 +544,15 @@ function renderHobbies() {
     });
 }
 
+const testHobbyButton = document.getElementById("test-hobby-button");
+if (testHobbyButton) {
+    testHobbyButton.addEventListener("click", function() {
+        hobbyTitleInput.value = "Board Games";
+        hobbyDescriptionInput.value = "A weekly group for testing new board games, sharing strategies, and meeting friends.";
+        hobbyImageInput.value = "https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=1200&q=80";
+    });
+}
+
 function addHobby(event) {
     event.preventDefault();
     const title = hobbyTitleInput.value.trim();
@@ -536,6 +580,13 @@ function initializePage() {
         document.getElementById("hobbies-view").hidden = true;
         document.getElementById("event-landing").hidden = true;
         renderHobbyDetail(hobbyIndex);
+        return;
+    }
+
+    if (hashParams.has("e") || new URLSearchParams(window.location.search).has("event")) {
+        document.getElementById("hobbies-view").hidden = true;
+        document.getElementById("hobby-detail").hidden = true;
+        renderEventLanding();
         return;
     }
 

@@ -44,7 +44,11 @@ h2 { margin: 0 0 6px; }
 .form-field input, .form-field textarea { min-width: 0; padding: 10px; border: 1px solid var(--border); border-radius: 6px; color: var(--text); background: var(--surface); font: inherit; }
 .form-field textarea { min-height: 112px; resize: vertical; line-height: 1.4; }
 .description-field { grid-column: 1 / -1; }
-.add-button, .remove-button { padding: 10px 14px; border: 0; border-radius: 6px; cursor: pointer; font: inherit; }
+.form-actions { display: flex; align-items: center; gap: 8px; }
+.test-button, .add-button, .remove-button { padding: 10px 14px; border-radius: 6px; cursor: pointer; font: inherit; }
+.test-button { border: 1px solid var(--border); color: var(--text); background: var(--surface); }
+.test-button:hover { background: var(--surface-muted); }
+.add-button, .remove-button { border: 0; }
 .add-button { color: var(--accent-text); background: var(--accent); }
 .add-button:hover { background: var(--accent-hover); }
 .hobby-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 18px 0 0; padding: 0; list-style: none; }
@@ -60,6 +64,7 @@ h2 { margin: 0 0 6px; }
 .hobby-card-link .hobby-cover-image { position: absolute; }
 .hobby-description-full { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.65; }
 .hobby-detail { max-width: 760px; margin: 0 auto; }
+.detail-cover-image, .landing-cover-image { display: block; width: 100%; height: clamp(220px, 42vw, 360px); margin-bottom: 18px; object-fit: cover; object-position: center; border-radius: 8px; background: var(--surface-muted); }
 .hobby-cover-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .hobby-card-with-image .hobby-details { position: absolute; right: 12px; bottom: 12px; left: 12px; max-height: calc(100% - 24px); overflow-y: auto; padding: 16px; border-radius: 6px; background: rgba(255, 255, 255, 0.94); color: #222; }
 :root[data-theme="dark"] .hobby-card-with-image .hobby-details { background: rgba(36, 39, 36, 0.94); color: var(--text); }

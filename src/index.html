@@ -53,7 +53,10 @@
                     <label for="hobby-image">Cover image URL <span class="optional-label">(optional)</span></label>
                     <input id="hobby-image" name="imageUrl" type="url" placeholder="https://example.com/hobby.jpg">
                 </div>
-                <button class="add-button" type="submit">Add hobby</button>
+                <div class="form-actions">
+                    <button class="test-button" id="test-hobby-button" type="button">Test</button>
+                    <button class="add-button" type="submit">Add hobby</button>
+                </div>
             </form>
 
             <ul id="hobby-list" class="hobby-list" aria-live="polite"></ul>
