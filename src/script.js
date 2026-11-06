@@ -90,6 +90,38 @@ const testHobbies = [
 
 const sampleHobbies = [
     {
+        id: "sample-gaming",
+        title: "Gaming",
+        description: "A community for tabletop, console, PC, handheld, and retro gaming. Share recommendations, organize sessions, swap strategies, and find people for the next adventure.",
+        imageUrl: "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80",
+        readOnly: true,
+        events: []
+    },
+    {
+        id: "sample-reading",
+        title: "Reading",
+        description: "Discuss books, share reading lists, trade recommendations, and join conversations across genres, authors, and formats.",
+        imageUrl: "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=1200&q=80",
+        readOnly: true,
+        events: []
+    },
+    {
+        id: "sample-dungeons-dragons-default",
+        title: "Dungeons and Dragons",
+        description: "Build adventures, find campaigns, share characters, discuss rules, and gather a welcoming table for stories worth remembering.",
+        imageUrl: "https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=1200&q=80",
+        readOnly: true,
+        events: []
+    },
+    {
+        id: "sample-camping",
+        title: "Camping",
+        description: "Plan trips, compare campsites, discuss gear and outdoor skills, and share the places, meals, and moments that make time outside memorable.",
+        imageUrl: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=1200&q=80",
+        readOnly: true,
+        events: []
+    },
+    {
         id: "sample-hiking",
         title: "Hiking",
         description: "Weekend hikes are a chance to reset, explore nearby trails, and notice the changing seasons.\n\nFavorite outings include ridge walks, shaded canyon trails, waterfall loops, and easy sunrise routes. Gear stays simple: comfortable shoes, plenty of water, snacks, a map, sun protection, and a willingness to turn around when the weather changes.\n\nA good goal is to build consistency without making every hike competitive. Some days are for distance, while others are for birdwatching, photography, geology, or walking slowly with friends.",
@@ -205,7 +237,7 @@ async function loadHobbiesFromSupabase() {
         throw browserError;
     }
 
-    publicHobbies = (browserRows || []).map(function(hobby) {
+    const databasePublicHobbies = (browserRows || []).map(function(hobby) {
         return {
             id: hobby.id,
             title: hobby.title,
@@ -217,6 +249,9 @@ async function loadHobbiesFromSupabase() {
             events: []
         };
     });
+    publicHobbies = [...sampleHobbies.filter(function(hobby) { return !hobby.personal; }), ...databasePublicHobbies.filter(function(hobby) {
+        return !sampleHobbies.some(function(sample) { return sample.title.toLowerCase() === hobby.title.toLowerCase(); });
+    })];
 
     const { data: eventRows, error: eventError } = await hobbyHubSupabase
         .from("events")
@@ -710,8 +745,171 @@ function refreshCurrentHobbyPage() {
     });
 }
 
-function renderHobbyDetail(hobbyIndex) {
-    const hobby = hobbies[hobbyIndex];
+async function createHobbyForum(hobby) {
+    const forum = document.createElement("section");
+    forum.className = "hobby-forum";
+    const heading = document.createElement("h3");
+    heading.textContent = "Community forum";
+    const list = document.createElement("div");
+    list.className = "forum-thread-list";
+    forum.append(heading, list);
+
+    let threads = [];
+    const localForumKey = "hobbyHubForum:" + (hobby.id || hobby.title);
+    if (!currentUser || String(hobby.id || "").startsWith("sample-")) {
+        try { threads = JSON.parse(localStorage.getItem(localForumKey)) || []; }
+        catch (error) { threads = []; }
+    } else {
+        try {
+            const { data, error } = await hobbyHubSupabase
+                .from("hobby_threads")
+                .select("id,title,created_at")
+                .eq("hobby_id", hobby.id)
+                .order("created_at", { ascending: false });
+            if (error) throw error;
+            threads = data || [];
+            for (const thread of threads) {
+                const { data: replies } = await hobbyHubSupabase
+                    .from("hobby_posts")
+                    .select("id,body,author_id,created_at")
+                    .eq("thread_id", thread.id)
+                    .order("created_at", { ascending: true });
+                thread.posts = replies || [];
+            }
+        } catch (error) {
+            list.textContent = "The forum is available when the latest database migration is installed.";
+        }
+    }
+
+    function saveLocalThreads() {
+        localStorage.setItem(localForumKey, JSON.stringify(threads));
+    }
+
+    function renderThreads() {
+        list.replaceChildren();
+        if (threads.length === 0) {
+            const empty = document.createElement("p");
+            empty.className = "forum-empty";
+            empty.textContent = "Start the first conversation in this hobby.";
+            list.append(empty);
+        }
+        threads.forEach(function(thread) {
+            const article = document.createElement("article");
+            article.className = "forum-thread";
+            const title = document.createElement("h4");
+            title.textContent = thread.title;
+            article.append(title);
+            (thread.posts || []).forEach(function(post) {
+                const reply = document.createElement("p");
+                reply.className = "forum-post";
+                reply.textContent = post.body;
+                article.append(reply);
+            });
+            if (currentUser) {
+                const replyForm = document.createElement("form");
+                replyForm.className = "forum-reply-form";
+                const replyInput = document.createElement("textarea");
+                replyInput.rows = 2;
+                replyInput.required = true;
+                replyInput.placeholder = "Add to the conversation…";
+                const replyButton = document.createElement("button");
+                replyButton.className = "add-button";
+                replyButton.type = "submit";
+                replyButton.textContent = "Reply";
+                replyForm.append(replyInput, replyButton);
+                replyForm.addEventListener("submit", async function(event) {
+                    event.preventDefault();
+                    const body = replyInput.value.trim();
+                    if (!body) return;
+                    if (String(hobby.id || "").startsWith("sample-")) {
+                        thread.posts = thread.posts || [];
+                        thread.posts.push({ body: body });
+                        saveLocalThreads();
+                        renderThreads();
+                    } else {
+                        const { error } = await hobbyHubSupabase.from("hobby_posts").insert({
+                            thread_id: thread.id,
+                            author_id: currentUser.id,
+                            body: body
+                        });
+                        if (error) { authStatus.textContent = "Unable to add reply: " + error.message; return; }
+                        await renderForum();
+                    }
+                });
+                article.append(replyForm);
+            }
+            list.append(article);
+        });
+    }
+
+    async function renderForum() {
+        if (!String(hobby.id || "").startsWith("sample-") && currentUser) {
+            const { data } = await hobbyHubSupabase.from("hobby_threads").select("id,title,created_at").eq("hobby_id", hobby.id).order("created_at", { ascending: false });
+            threads = data || [];
+            for (const thread of threads) {
+                const { data: replies } = await hobbyHubSupabase.from("hobby_posts").select("id,body,author_id,created_at").eq("thread_id", thread.id).order("created_at", { ascending: true });
+                thread.posts = replies || [];
+            }
+        }
+        renderThreads();
+    }
+
+    if (currentUser) {
+        const newThreadForm = document.createElement("form");
+        newThreadForm.className = "forum-thread-form";
+        const titleInput = document.createElement("input");
+        titleInput.type = "text";
+        titleInput.required = true;
+        titleInput.maxLength = 160;
+        titleInput.placeholder = "Start a new discussion";
+        const postInput = document.createElement("textarea");
+        postInput.rows = 3;
+        postInput.required = true;
+        postInput.placeholder = "What would you like to discuss?";
+        const submitButton = document.createElement("button");
+        submitButton.className = "add-button";
+        submitButton.type = "submit";
+        submitButton.textContent = "Post discussion";
+        newThreadForm.append(titleInput, postInput, submitButton);
+        newThreadForm.addEventListener("submit", async function(event) {
+            event.preventDefault();
+            if (String(hobby.id || "").startsWith("sample-")) {
+                threads.unshift({ title: titleInput.value.trim(), posts: [{ body: postInput.value.trim() }] });
+                saveLocalThreads();
+                renderThreads();
+                newThreadForm.reset();
+                return;
+            }
+            const { data: createdThread, error } = await hobbyHubSupabase.from("hobby_threads")
+                .insert({ hobby_id: hobby.id, author_id: currentUser.id, title: titleInput.value.trim() })
+                .select("id")
+                .single();
+            if (error) { authStatus.textContent = "Unable to create discussion: " + error.message; return; }
+            const { error: postError } = await hobbyHubSupabase.from("hobby_posts")
+                .insert({ thread_id: createdThread.id, author_id: currentUser.id, body: postInput.value.trim() });
+            if (postError) { authStatus.textContent = "Discussion created, but the opening post failed: " + postError.message; return; }
+            newThreadForm.reset();
+            await renderForum();
+        });
+        forum.append(newThreadForm);
+    } else {
+        const signInPrompt = document.createElement("p");
+        signInPrompt.className = "forum-empty";
+        signInPrompt.textContent = "Log in to start discussions and reply.";
+        forum.append(signInPrompt);
+    }
+    renderThreads();
+    return forum;
+}
+
+function findHobbyByTitle(title) {
+    return [...hobbies, ...publicHobbies].find(function(hobby) {
+        return hobby.title.toLowerCase() === String(title || "").toLowerCase();
+    });
+}
+
+async function renderHobbyDetail(hobbyIndex) {
+    const hobby = hobbies[hobbyIndex] || findHobbyByTitle(new URLSearchParams(window.location.hash.slice(1)).get("hobby"));
     if (!hobby) {
         return false;
     }
@@ -762,7 +960,11 @@ function renderHobbyDetail(hobbyIndex) {
     const detailItems = (!hobby.readOnly || currentUser)
         ? [coverImage, title, description, removeButton, eventsDropdown]
         : [coverImage, title, description, eventsDropdown];
-    content.replaceChildren(...detailItems.filter(function(element) {
+    const visibleDetailItems = detailItems.filter(function(element) {
+        return element !== coverImage || hobby.imageUrl;
+    });
+    visibleDetailItems.push(await createHobbyForum(hobby));
+    content.replaceChildren(...visibleDetailItems.filter(function(element) {
         return element !== coverImage || hobby.imageUrl;
     }));
     document.title = hobby.title + " | HobbyHub";
@@ -847,10 +1049,6 @@ document.getElementById("my-hobbies-nav")?.addEventListener("click", function() 
     renderHobbies();
 });
 document.getElementById("hobby-browser-nav")?.addEventListener("click", function() {
-    if (!currentUser) {
-        window.location.hash = "login";
-        return;
-    }
     hobbiesViewMode = "browse";
     renderHobbies();
 });

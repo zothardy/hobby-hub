@@ -158,6 +158,17 @@ h2 { margin: 0 0 6px; }
 .event-form .add-button { justify-self: start; }
 .map-link, .share-button { display: inline-block; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font: inherit; text-decoration: none; cursor: pointer; }
 .map-link:hover, .share-button:hover { background: var(--surface-muted); }
+.hobby-forum { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+.hobby-forum h3 { margin-bottom: 14px; }
+.forum-thread-form, .forum-reply-form { display: grid; gap: 8px; }
+.forum-thread-form { margin-bottom: 18px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.forum-thread-form input, .forum-thread-form textarea, .forum-reply-form textarea { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--border); border-radius: 6px; color: var(--text); background: var(--surface); font: inherit; }
+.forum-thread-form button, .forum-reply-form button { justify-self: start; }
+.forum-thread-list { display: grid; gap: 12px; }
+.forum-thread { padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.forum-thread h4 { margin: 0 0 12px; }
+.forum-post { margin: 8px 0 8px 14px; padding-left: 12px; border-left: 3px solid var(--accent); white-space: pre-wrap; }
+.forum-empty { color: var(--muted-text); }
 .hobby-details h3 { margin: 0 0 8px; }
 .hobby-details p { line-height: 1.4; }
 .remove-button { flex: 0 0 auto; color: var(--danger-text); background: var(--danger-bg); }
