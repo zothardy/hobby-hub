@@ -155,6 +155,7 @@ alter table public.profiles add column if not exists is_dev boolean not null def
 alter table public.profiles add column if not exists global_role text not null default 'hobbyist'
     check (global_role in ('hobbyist', 'mod', 'dev'));
 alter table public.hobbies add column if not exists is_public boolean not null default true;
+alter table public.hobbies add column if not exists labels text[] not null default '{}';
 alter table public.hobbies add column if not exists owner_role text not null default 'admin'
     check (owner_role in ('admin', 'mod', 'hobbyist'));
 
@@ -206,7 +207,8 @@ with check (auth.uid() = author_id);
 drop policy if exists "Members read hobby posts" on public.hobby_posts;
 create policy "Members read hobby posts" on public.hobby_posts for select using (true);
 drop policy if exists "Members write hobby posts" on public.hobby_posts;
-create policy "Members write hobby_posts" on public.hobby_posts for insert
+drop policy if exists "Members write hobby_posts" on public.hobby_posts;
+create policy "Members write hobby posts" on public.hobby_posts for insert
 with check (auth.uid() = author_id);
 
 alter table public.events add column if not exists rsvp_enabled boolean not null default false;

@@ -114,19 +114,29 @@
 
         <section id="hobbies-view" aria-labelledby="current-hobbies-heading">
             <nav class="community-nav" aria-label="HobbyHub pages">
-                <button id="my-hobbies-nav" class="community-nav-button active" type="button">My hobbies</button>
-                <button id="hobby-browser-nav" class="community-nav-button" type="button">Browse hobbies</button>
+                <button id="hobby-browser-nav" class="community-nav-button active" type="button">Browse hobbies</button>
+                <button id="my-hobbies-nav" class="community-nav-button" type="button">My hobbies</button>
             </nav>
+            <div id="hobby-search-wrap" class="hobby-search-wrap">
+                <label for="hobby-search">Search hobby communities</label>
+                <input id="hobby-search" type="search" placeholder="Search by hobby or label…" autocomplete="off">
+            </div>
             <div class="section-heading">
                 <div>
-                    <h2 id="current-hobbies-heading">My hobbies</h2>
-                    <p id="hobbies-view-description" class="section-description">Your collection of hobbies joined and created.</p>
+                    <h2 id="current-hobbies-heading">Browse hobbies</h2>
+                    <p id="hobbies-view-description" class="section-description">Discover communities and add them to your hobby collection.</p>
                 </div>
                 <p id="sample-profile-message" class="sample-profile-message" hidden>Customize your HobbyHub profile to your liking!</p>
                 <span id="sample-hobbies-heading" tabindex="-1"></span>
             </div>
 
+            <button id="add-hobby-button" class="primary-cta add-hobby-button" type="button" hidden>Add a hobby!</button>
             <form id="hobby-form" class="hobby-form" hidden>
+                <div class="form-field hobby-label-field">
+                    <label for="hobby-labels">Labels <span class="optional-label">(optional)</span></label>
+                    <input id="hobby-labels" name="labels" type="text" maxlength="120" placeholder="Gaming, tabletop, outdoors">
+                    <small>Separate labels with commas.</small>
+                </div>
                 <div class="form-field">
                     <label for="hobby-title">Hobby name</label>
                     <input id="hobby-title" name="title" type="text" maxlength="80" required>
@@ -140,15 +150,14 @@
                     <input id="hobby-image" name="imageUrl" type="url" placeholder="https://example.com/hobby.jpg">
                 </div>
                 <fieldset class="form-field visibility-field">
-                    <legend>Hobby visibility</legend>
-                    <label class="choice-label" for="hobby-public">
-                        <input id="hobby-public" name="visibility" type="radio" value="public" checked>
-                        Public — discoverable and joinable
+                    <legend>Who can see it?</legend>
+                    <label class="visibility-toggle" for="hobby-public">
+                        <span>Personal</span>
+                        <input id="hobby-public" name="visibility" type="checkbox" value="public">
+                        <span class="visibility-toggle-track" aria-hidden="true"></span>
+                        <span>Public</span>
                     </label>
-                    <label class="choice-label" for="hobby-personal">
-                        <input id="hobby-personal" name="visibility" type="radio" value="personal">
-                        Personal — only visible on your profile
-                    </label>
+                    <small id="visibility-help">Personal hobbies are only visible on your profile.</small>
                 </fieldset>
                 <div class="form-actions">
                     <button class="test-button" id="test-hobby-button" type="button">Test</button>

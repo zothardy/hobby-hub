@@ -94,6 +94,7 @@ const sampleHobbies = [
         title: "Gaming",
         description: "A community for tabletop, console, PC, handheld, and retro gaming. Share recommendations, organize sessions, swap strategies, and find people for the next adventure.",
         imageUrl: "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80",
+        labels: ["Games", "Digital", "Tabletop"],
         readOnly: true,
         events: []
     },
@@ -102,6 +103,7 @@ const sampleHobbies = [
         title: "Reading",
         description: "Discuss books, share reading lists, trade recommendations, and join conversations across genres, authors, and formats.",
         imageUrl: "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=1200&q=80",
+        labels: ["Books", "Literature", "Learning"],
         readOnly: true,
         events: []
     },
@@ -110,6 +112,7 @@ const sampleHobbies = [
         title: "Dungeons and Dragons",
         description: "Build adventures, find campaigns, share characters, discuss rules, and gather a welcoming table for stories worth remembering.",
         imageUrl: "https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=1200&q=80",
+        labels: ["Fantasy", "Role-playing", "Tabletop"],
         readOnly: true,
         events: []
     },
@@ -118,6 +121,7 @@ const sampleHobbies = [
         title: "Camping",
         description: "Plan trips, compare campsites, discuss gear and outdoor skills, and share the places, meals, and moments that make time outside memorable.",
         imageUrl: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=1200&q=80",
+        labels: ["Outdoors", "Nature", "Travel"],
         readOnly: true,
         events: []
     },
@@ -198,7 +202,7 @@ function loadHobbies() {
 
 let hobbies = loadHobbies();
 let publicHobbies = sampleHobbies.filter(function(hobby) { return !hobby.personal; });
-let hobbiesViewMode = "mine";
+let hobbiesViewMode = "browse";
 let currentUser = null;
 let currentUserProfile = null;
 
@@ -217,7 +221,7 @@ async function loadHobbiesFromSupabase() {
     const loadingUserId = currentUser.id;
     const { data: hobbyRows, error: hobbyError } = await hobbyHubSupabase
         .from("hobbies")
-        .select("id,title,description,image_url,is_public,owner_role")
+        .select("id,title,description,image_url,is_public,labels,owner_role")
         .eq("user_id", loadingUserId)
         .order("created_at", { ascending: true });
 
@@ -230,7 +234,7 @@ async function loadHobbiesFromSupabase() {
 
     const { data: browserRows, error: browserError } = await hobbyHubSupabase
         .from("hobbies")
-        .select("id,user_id,title,description,image_url,is_public,owner_role")
+        .select("id,user_id,title,description,image_url,is_public,labels,owner_role")
         .eq("is_public", true);
 
     if (browserError) {
@@ -244,6 +248,7 @@ async function loadHobbiesFromSupabase() {
             description: hobby.description,
             imageUrl: hobby.image_url || "",
             visibility: "public",
+            labels: hobby.labels || [],
             ownerId: hobby.user_id,
             ownerRole: hobby.owner_role || "admin",
             events: []
@@ -273,6 +278,7 @@ async function loadHobbiesFromSupabase() {
             title: hobby.title,
             description: hobby.description,
             imageUrl: hobby.image_url || "",
+            labels: hobby.labels || [],
             visibility: hobby.is_public === false ? "personal" : "public",
             events: (eventRows || []).filter(function(event) {
                 return event.hobby_id === hobby.id;
@@ -319,6 +325,7 @@ async function syncHobbiesToSupabase() {
                 title: hobby.title,
                 description: hobby.description,
                 image_url: hobby.imageUrl || null,
+                labels: hobby.labels || [],
                 is_public: hobby.visibility !== "personal"
             };
         }))
@@ -977,8 +984,12 @@ async function renderHobbyDetail(hobbyIndex) {
 function renderHobbies() {
     hobbyList.replaceChildren();
     const browsing = hobbiesViewMode === "browse";
-    const visibleHobbies = browsing ? publicHobbies : hobbies.filter(function(hobby) {
+    const query = (document.getElementById("hobby-search")?.value || "").trim().toLowerCase();
+    const visibleHobbies = (browsing ? publicHobbies : hobbies.filter(function(hobby) {
         return hobby.visibility !== "personal" || !hobby.joined || hobby.ownerId === currentUser?.id;
+    })).filter(function(hobby) {
+        const labelText = (hobby.labels || []).join(" ").toLowerCase();
+        return !query || (hobby.title + " " + hobby.description + " " + labelText).toLowerCase().includes(query);
     });
     document.getElementById("current-hobbies-heading").textContent = browsing ? "Hobby browser" : "My hobbies";
     document.getElementById("hobbies-view-description").textContent = browsing
@@ -986,6 +997,9 @@ function renderHobbies() {
         : "Your collection of hobbies joined and created.";
     document.getElementById("my-hobbies-nav")?.classList.toggle("active", !browsing);
     document.getElementById("hobby-browser-nav")?.classList.toggle("active", browsing);
+    document.getElementById("hobby-search-wrap").hidden = !browsing;
+    const addButton = document.getElementById("add-hobby-button");
+    addButton.hidden = browsing || !currentUser;
 
     visibleHobbies.forEach(function(hobby, hobbyIndex) {
         const item = document.createElement("li");
@@ -1011,12 +1025,23 @@ function renderHobbies() {
         }
         cardLink.append(title);
         item.append(cardLink);
+        if ((hobby.labels || []).length) {
+            const labels = document.createElement("div");
+            labels.className = "hobby-label-list";
+            hobby.labels.forEach(function(label) {
+                const badge = document.createElement("span");
+                badge.className = "hobby-label";
+                badge.textContent = label;
+                labels.append(badge);
+            });
+            item.append(labels);
+        }
         if (browsing && currentUser) {
             const joinButton = document.createElement("button");
             const alreadyJoined = hobbies.some(function(joined) { return joined.id === hobby.id; });
             joinButton.className = alreadyJoined ? "remove-button" : "add-button";
             joinButton.type = "button";
-            joinButton.textContent = alreadyJoined ? "Leave hobby" : "Join hobby";
+            joinButton.textContent = alreadyJoined ? "Leave my hobbies" : "Add to my hobbies";
             joinButton.addEventListener("click", function() {
                 if (alreadyJoined) {
                     hobbies = hobbies.filter(function(joined) { return joined.id !== hobby.id; });
@@ -1052,6 +1077,16 @@ document.getElementById("hobby-browser-nav")?.addEventListener("click", function
     hobbiesViewMode = "browse";
     renderHobbies();
 });
+document.getElementById("add-hobby-button")?.addEventListener("click", function() {
+    hobbyForm.hidden = !hobbyForm.hidden;
+    if (!hobbyForm.hidden) hobbyTitleInput.focus();
+});
+document.getElementById("hobby-search")?.addEventListener("input", renderHobbies);
+document.getElementById("hobby-public")?.addEventListener("change", function(event) {
+    document.getElementById("visibility-help").textContent = event.target.checked
+        ? "Public hobbies appear in the Hobby Browser."
+        : "Personal hobbies are only visible on your profile.";
+});
 if (removeAllHobbiesButton) {
     removeAllHobbiesButton.addEventListener("click", function() {
         hobbies = [];
@@ -1069,9 +1104,26 @@ function addHobby(event) {
         return;
     }
 
-    const visibility = new FormData(hobbyForm).get("visibility") === "personal" ? "personal" : "public";
-    hobbies.push({ title: title, description: description, imageUrl: imageUrl, visibility: visibility, events: [] });
+    const visibility = document.getElementById("hobby-public").checked ? "public" : "personal";
+    const labels = document.getElementById("hobby-labels").value.split(",")
+        .map(function(label) { return label.trim(); })
+        .filter(function(label, index, values) { return label && values.indexOf(label) === index; });
+    const newHobby = { title: title, description: description, imageUrl: imageUrl, labels: labels, visibility: visibility, events: [], joined: true };
+    if (visibility === "public") {
+        const exists = [...hobbies, ...publicHobbies].some(function(hobby) {
+            return hobby.title.trim().toLowerCase() === title.toLowerCase();
+        });
+        if (exists) {
+            authStatus.textContent = "A hobby community with that name already exists.";
+            hobbyTitleInput.focus();
+            return;
+        }
+        publicHobbies.push(newHobby);
+    }
+    hobbies.push(newHobby);
     saveHobbies();
+    hobbyForm.hidden = true;
+    hobbiesViewMode = "mine";
     renderHobbies();
     hobbyForm.reset();
     hobbyTitleInput.focus();
