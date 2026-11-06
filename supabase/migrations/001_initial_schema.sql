@@ -204,12 +204,24 @@ create policy "Members read hobby threads" on public.hobby_threads for select us
 drop policy if exists "Members write hobby threads" on public.hobby_threads;
 create policy "Members write hobby threads" on public.hobby_threads for insert
 with check (auth.uid() = author_id);
+drop policy if exists "Devs remove hobby threads" on public.hobby_threads;
+create policy "Devs remove hobby threads" on public.hobby_threads for delete
+using (exists (
+    select 1 from public.profiles
+    where id = auth.uid() and is_dev = true
+));
 drop policy if exists "Members read hobby posts" on public.hobby_posts;
 create policy "Members read hobby posts" on public.hobby_posts for select using (true);
 drop policy if exists "Members write hobby posts" on public.hobby_posts;
 drop policy if exists "Members write hobby_posts" on public.hobby_posts;
 create policy "Members write hobby posts" on public.hobby_posts for insert
 with check (auth.uid() = author_id);
+drop policy if exists "Devs remove hobby posts" on public.hobby_posts;
+create policy "Devs remove hobby posts" on public.hobby_posts for delete
+using (exists (
+    select 1 from public.profiles
+    where id = auth.uid() and is_dev = true
+));
 
 alter table public.events add column if not exists rsvp_enabled boolean not null default false;
 

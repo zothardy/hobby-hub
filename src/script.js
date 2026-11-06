@@ -769,7 +769,15 @@ async function getForumUsernames(userIds) {
 
 async function loadHobbyThreads(hobby) {
     if (String(hobby.id || "").startsWith("sample-")) {
-        try { return JSON.parse(localStorage.getItem("hobbyHubForum:" + hobby.id)) || []; }
+        try {
+            const localThreads = JSON.parse(localStorage.getItem("hobbyHubForum:" + hobby.id)) || [];
+            return localThreads.map(function(thread, index) {
+                return {
+                    ...thread,
+                    id: thread.id || "local-" + hobby.id + "-" + index
+                };
+            });
+        }
         catch (error) { return []; }
     }
     if (!hobby.id) return [];
@@ -893,10 +901,24 @@ async function renderForumPostPage(threadId, hobbyTitle) {
             thread = threads.find(function(item) { return item.id === threadId; });
         } catch (error) {}
     } else if (threadId) {
-        const { data: threadRow } = await hobbyHubSupabase.from("hobby_threads").select("id,title,author_id,created_at").eq("id", threadId).single();
-        if (threadRow) {
-            const { data: posts } = await hobbyHubSupabase.from("hobby_posts").select("id,body,author_id,created_at").eq("thread_id", threadId).order("created_at", { ascending: true });
-            thread = { ...threadRow, posts: posts || [] };
+        const { data: threadRow, error } = await hobbyHubSupabase
+            .from("hobby_threads")
+            .select("id,title,author_id,created_at,hobby_id")
+            .eq("id", threadId)
+            .maybeSingle();
+        if (!error && threadRow) {
+            const { data: posts, error: postsError } = await hobbyHubSupabase
+                .from("hobby_posts")
+                .select("id,body,author_id,created_at")
+                .eq("thread_id", threadId)
+                .order("created_at", { ascending: true });
+            if (!postsError) thread = { ...threadRow, posts: posts || [] };
+        }
+        if (!thread && hobby) {
+            try {
+                const loadedThreads = await loadHobbyThreads(hobby);
+                thread = loadedThreads.find(function(item) { return item.id === threadId; }) || null;
+            } catch (error) {}
         }
     }
     const content = page.querySelector(".forum-post-content");
@@ -908,6 +930,32 @@ async function renderForumPostPage(threadId, hobbyTitle) {
     const title = document.createElement("h2");
     title.textContent = thread.title;
     content.append(title);
+
+    if (currentUserProfile && currentUserProfile.is_dev) {
+        const removePostButton = document.createElement("button");
+        removePostButton.className = "remove-button";
+        removePostButton.type = "button";
+        removePostButton.textContent = "Remove post";
+        removePostButton.addEventListener("click", async function() {
+            if (!window.confirm("Remove this post and all of its replies?")) return;
+            let removed = false;
+            if (hobby && String(hobby.id || "").startsWith("sample-")) {
+                const key = "hobbyHubForum:" + hobby.id;
+                let threads = [];
+                try { threads = JSON.parse(localStorage.getItem(key)) || []; } catch (error) {}
+                const remaining = threads.filter(function(item) { return item.id !== threadId; });
+                localStorage.setItem(key, JSON.stringify(remaining));
+                removed = true;
+            } else {
+                const { error } = await hobbyHubSupabase.from("hobby_threads").delete().eq("id", threadId);
+                if (error) authStatus.textContent = "Unable to remove post: " + error.message;
+                else removed = true;
+            }
+            if (removed) window.location.hash = "hobby=" + encodeURIComponent(hobbyTitle);
+        });
+        content.append(removePostButton);
+    }
+
     const authorIds = [thread.author_id].concat((thread.posts || []).map(function(post) { return post.author_id || post.authorId; }));
     const usernames = await getForumUsernames(authorIds);
     const posts = thread.posts && thread.posts.length ? thread.posts : [{ body: "", authorId: thread.authorId, authorName: thread.authorName }];
