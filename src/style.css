@@ -183,6 +183,9 @@ h2 { margin: 0 0 6px; }
 .forum-thread-form button, .forum-reply-form button { justify-self: start; }
 .forum-thread-list { display: grid; gap: 12px; }
 .forum-thread { padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.forum-thread-item { position: relative; }
+.forum-remove-post-button { position: absolute; right: 12px; bottom: 12px; }
+.forum-thread-item:has(.forum-remove-post-button) .forum-thread-link { padding-right: 120px; }
 .forum-thread-link { display: block; color: var(--text); text-decoration: none; }
 .forum-thread-link:hover { border-color: var(--accent); }
 .forum-thread h4 { margin: 0 0 12px; }

@@ -134,12 +134,20 @@ create trigger on_auth_user_created
 after insert on auth.users
 for each row execute function public.handle_new_profile();
 
+drop policy if exists "Devs remove any hobby" on public.hobbies;
+create policy "Devs remove any hobby"
+on public.hobbies for delete
+using (exists (select 1 from public.profiles where id = auth.uid() and is_dev = true));
 drop policy if exists "Users manage their hobbies" on public.hobbies;
 create policy "Users manage their hobbies"
 on public.hobbies for all
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
+drop policy if exists "Devs remove any event" on public.events;
+create policy "Devs remove any event"
+on public.events for delete
+using (exists (select 1 from public.profiles where id = auth.uid() and is_dev = true));
 drop policy if exists "Users manage their events" on public.events;
 create policy "Users manage their events"
 on public.events for all

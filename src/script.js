@@ -626,10 +626,15 @@ function renderEvent(event, hobby, hobbyIndex, eventIndex) {
     removeButton.className = "remove-button";
     removeButton.type = "button";
     removeButton.textContent = "Remove";
-    removeButton.hidden = true;
-    removeButton.addEventListener("click", function() {
+    removeButton.hidden = !Boolean(currentUserProfile && currentUserProfile.is_dev);
+    removeButton.addEventListener("click", async function() {
+        if (!window.confirm("Remove this event for everyone?")) return;
+        if (currentUser && event.id && !String(event.id).startsWith("sample-") && !String(event.id).startsWith("event-")) {
+            const { error } = await hobbyHubSupabase.from("events").delete().or("id.eq." + event.id + ",share_id.eq." + event.id);
+            if (error) { authStatus.textContent = "Unable to remove event: " + error.message; return; }
+        }
         hobby.events.splice(eventIndex, 1);
-        saveHobbies();
+        if (!currentUser) saveHobbies();
         refreshCurrentHobbyPage();
     });
 
@@ -856,7 +861,36 @@ async function createHobbyForum(hobby) {
         replies.textContent = "💬 " + Math.max(0, (thread.posts || []).length - 1);
         meta.append(author, replies);
         link.append(title, meta);
-        list.append(link);
+        const threadItem = document.createElement("div");
+        threadItem.className = "forum-thread-item";
+        threadItem.append(link);
+        if (currentUserProfile && currentUserProfile.is_dev) {
+            const removePostButton = document.createElement("button");
+            removePostButton.className = "remove-button forum-remove-post-button";
+            removePostButton.type = "button";
+            removePostButton.textContent = "Remove post";
+            removePostButton.addEventListener("click", async function() {
+                if (!window.confirm("Remove this post and all of its replies?")) return;
+                let removed = false;
+                if (String(hobby.id || "").startsWith("sample-")) {
+                    const key = "hobbyHubForum:" + hobby.id;
+                    let localThreads = [];
+                    try { localThreads = JSON.parse(localStorage.getItem(key)) || []; } catch (error) {}
+                    localStorage.setItem(key, JSON.stringify(localThreads.filter(function(localThread) { return localThread.id !== thread.id; })));
+                    removed = true;
+                } else {
+                    const { error } = await hobbyHubSupabase.from("hobby_threads").delete().eq("id", thread.id);
+                    if (error) authStatus.textContent = "Unable to remove post: " + error.message;
+                    else removed = true;
+                }
+                if (removed) {
+                    threads = threads.filter(function(localThread) { return localThread.id !== thread.id; });
+                    renderThreads();
+                }
+            });
+            threadItem.append(removePostButton);
+        }
+        list.append(threadItem);
     });
     return forum;
 }
@@ -1036,9 +1070,17 @@ async function renderHobbyDetail(hobbyIndex) {
     removeButton.type = "button";
     removeButton.textContent = "Remove hobby";
     removeButton.hidden = !Boolean(currentUserProfile && currentUserProfile.is_dev);
-    removeButton.addEventListener("click", function() {
+    removeButton.addEventListener("click", async function() {
+        if (!window.confirm("Remove this hobby community for everyone?")) return;
+        if (hobby.id && currentUser && !String(hobby.id).startsWith("sample-")) {
+            const { error } = await hobbyHubSupabase.from("hobbies").delete().eq("id", hobby.id);
+            if (error) { authStatus.textContent = "Unable to remove hobby: " + error.message; return; }
+        }
         hobbies.splice(hobbyIndex, 1);
-        saveHobbies();
+        publicHobbies = publicHobbies.filter(function(publicHobby) {
+            return publicHobby.id !== hobby.id && publicHobby.title.toLowerCase() !== hobby.title.toLowerCase();
+        });
+        if (!currentUser) saveHobbies();
         window.location.hash = "";
         renderHobbies();
     });
@@ -1118,6 +1160,28 @@ function renderHobbies() {
                 labels.append(badge);
             });
             item.append(labels);
+        }
+        if (currentUserProfile && currentUserProfile.is_dev) {
+            const devRemoveButton = document.createElement("button");
+            devRemoveButton.className = "remove-button";
+            devRemoveButton.type = "button";
+            devRemoveButton.textContent = "Remove hobby";
+            devRemoveButton.addEventListener("click", async function() {
+                if (!window.confirm("Remove this hobby community for everyone?")) return;
+                if (hobby.id && !String(hobby.id).startsWith("sample-") && !String(hobby.id).startsWith("default-")) {
+                    const { error } = await hobbyHubSupabase.from("hobbies").delete().eq("id", hobby.id);
+                    if (error) { authStatus.textContent = "Unable to remove hobby: " + error.message; return; }
+                }
+                publicHobbies = publicHobbies.filter(function(publicHobby) {
+                    return publicHobby.id !== hobby.id && publicHobby.title.toLowerCase() !== hobby.title.toLowerCase();
+                });
+                hobbies = hobbies.filter(function(joinedHobby) {
+                    return joinedHobby.id !== hobby.id && joinedHobby.title.toLowerCase() !== hobby.title.toLowerCase();
+                });
+                saveHobbies();
+                renderHobbies();
+            });
+            item.append(devRemoveButton);
         }
         if (browsing && currentUser) {
             const joinButton = document.createElement("button");
