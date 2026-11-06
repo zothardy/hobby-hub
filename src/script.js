@@ -996,6 +996,7 @@ async function renderHobbyDetail(hobbyIndex) {
     const title = document.createElement("h2");
     const coverImage = document.createElement("img");
     const description = document.createElement("p");
+    const membershipButton = document.createElement("button");
     const removeButton = document.createElement("button");
     const eventsDropdown = document.createElement("details");
     const eventsHeading = document.createElement("summary");
@@ -1011,6 +1012,29 @@ async function renderHobbyDetail(hobbyIndex) {
     }
     description.className = "hobby-description-full";
     description.textContent = hobby.description;
+
+    const isJoined = hobbies.some(function(joinedHobby) {
+        return joinedHobby.id === hobby.id || joinedHobby.title.toLowerCase() === hobby.title.toLowerCase();
+    });
+    membershipButton.className = isJoined ? "secondary-cta leave-hobby-button" : "add-button";
+    membershipButton.type = "button";
+    membershipButton.textContent = isJoined ? "Leave hobby" : "Join hobby";
+    membershipButton.addEventListener("click", function() {
+        if (!currentUser) {
+            window.location.hash = "login";
+            return;
+        }
+        if (isJoined) {
+            hobbies = hobbies.filter(function(joinedHobby) {
+                return joinedHobby.id !== hobby.id && joinedHobby.title.toLowerCase() !== hobby.title.toLowerCase();
+            });
+        } else {
+            hobbies.push({ ...hobby, joined: true, events: hobby.events || [] });
+        }
+        saveHobbies();
+        window.requestAnimationFrame(function() { renderHobbyDetail(hobbyIndex); });
+    });
+
     eventsDropdown.className = "events-dropdown";
     eventsDropdown.open = true;
     eventsHeading.textContent = "Events (" + hobby.events.length + ")";
@@ -1044,8 +1068,8 @@ async function renderHobbyDetail(hobbyIndex) {
         eventsDropdown.append(createEventForm(hobby, hobbyIndex));
     }
     const detailItems = (!hobby.readOnly || currentUser)
-        ? [coverImage, title, description, removeButton, eventsDropdown]
-        : [coverImage, title, description, eventsDropdown];
+        ? [coverImage, title, description, membershipButton, removeButton, eventsDropdown]
+        : [coverImage, title, description, membershipButton, eventsDropdown];
     const visibleDetailItems = detailItems.filter(function(element) {
         return element !== coverImage || hobby.imageUrl;
     });
