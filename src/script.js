@@ -725,12 +725,14 @@ async function loadHobbyThreads(hobby) {
     if (String(hobby.id || "").startsWith("sample-")) {
         try {
             const localThreads = JSON.parse(localStorage.getItem("hobbyHubForum:" + hobby.id)) || [];
-            return localThreads.map(function(thread, index) {
+            const normalizedThreads = localThreads.map(function(thread, index) {
                 return {
                     ...thread,
                     id: thread.id || "local-" + hobby.id + "-" + index
                 };
             });
+            localStorage.setItem("hobbyHubForum:" + hobby.id, JSON.stringify(normalizedThreads));
+            return normalizedThreads;
         }
         catch (error) { return []; }
     }
@@ -825,7 +827,10 @@ async function createHobbyForum(hobby) {
                     const key = "hobbyHubForum:" + hobby.id;
                     let localThreads = [];
                     try { localThreads = JSON.parse(localStorage.getItem(key)) || []; } catch (error) {}
-                    localStorage.setItem(key, JSON.stringify(localThreads.filter(function(localThread) { return localThread.id !== thread.id; })));
+                    const normalizedThreads = localThreads.map(function(localThread, index) {
+                        return { ...localThread, id: localThread.id || "local-" + hobby.id + "-" + index };
+                    });
+                    localStorage.setItem(key, JSON.stringify(normalizedThreads.filter(function(localThread) { return localThread.id !== thread.id; })));
                     removed = true;
                 } else {
                     const { error } = await hobbyHubSupabase.from("hobby_threads").delete().eq("id", thread.id);
