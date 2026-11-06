@@ -113,10 +113,14 @@
         </section>
 
         <section id="hobbies-view" aria-labelledby="current-hobbies-heading">
+            <nav class="community-nav" aria-label="HobbyHub pages">
+                <button id="my-hobbies-nav" class="community-nav-button active" type="button">My hobbies</button>
+                <button id="hobby-browser-nav" class="community-nav-button" type="button">Browse hobbies</button>
+            </nav>
             <div class="section-heading">
                 <div>
-                    <h2 id="current-hobbies-heading">Current Hobbies</h2>
-                    <p class="section-description">A few hobbies to get your test profile started.</p>
+                    <h2 id="current-hobbies-heading">My hobbies</h2>
+                    <p id="hobbies-view-description" class="section-description">Your collection of hobbies joined and created.</p>
                 </div>
                 <p id="sample-profile-message" class="sample-profile-message" hidden>Customize your HobbyHub profile to your liking!</p>
                 <span id="sample-hobbies-heading" tabindex="-1"></span>
@@ -135,6 +139,17 @@
                     <label for="hobby-image">Cover image URL <span class="optional-label">(optional)</span></label>
                     <input id="hobby-image" name="imageUrl" type="url" placeholder="https://example.com/hobby.jpg">
                 </div>
+                <fieldset class="form-field visibility-field">
+                    <legend>Hobby visibility</legend>
+                    <label class="choice-label" for="hobby-public">
+                        <input id="hobby-public" name="visibility" type="radio" value="public" checked>
+                        Public — discoverable and joinable
+                    </label>
+                    <label class="choice-label" for="hobby-personal">
+                        <input id="hobby-personal" name="visibility" type="radio" value="personal">
+                        Personal — only visible on your profile
+                    </label>
+                </fieldset>
                 <div class="form-actions">
                     <button class="test-button" id="test-hobby-button" type="button">Test</button>
                     <button class="add-button" type="submit">Add hobby</button>

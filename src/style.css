@@ -81,6 +81,18 @@ section { margin-bottom: 36px; }
 .section-heading { margin-bottom: 20px; }
 .sample-profile-message { width: fit-content; max-width: 520px; margin: 14px 0 0; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px 8px 8px 2px; color: var(--text); background: var(--surface); box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08); font-weight: bold; }
 h2 { margin: 0 0 6px; }
+.community-nav { display: flex; gap: 8px; margin-bottom: 18px; }
+.community-nav-button { padding: 9px 14px; border: 1px solid var(--border); border-radius: 999px; color: var(--text); background: var(--surface); cursor: pointer; }
+.community-nav-button.active { border-color: var(--accent); color: var(--accent-text); background: var(--accent); }
+.visibility-field { grid-column: 1 / -1; border: 1px solid var(--border); border-radius: 8px; }
+.choice-label { display: flex; align-items: center; gap: 8px; font-weight: normal; }
+.role-badge { display: inline-block; margin-left: 6px; padding: 3px 7px; border-radius: 999px; font-size: 11px; font-weight: bold; }
+.dev-badge { color: #fff; background: linear-gradient(135deg, #7c3aed, #2563eb); }
+.event-privacy-field { grid-column: 1 / -1; flex-direction: row; align-items: center; }
+.tooltip-label { position: relative; }
+.tooltip { display: inline-grid; place-items: center; width: 18px; height: 18px; margin-left: 3px; border-radius: 50%; color: var(--accent-text); background: var(--accent); font-size: 12px; cursor: help; }
+.tooltip::after { content: attr(aria-label); position: absolute; left: 0; bottom: 125%; z-index: 5; width: 260px; padding: 10px; border-radius: 7px; color: var(--surface); background: var(--text); font-size: 12px; font-weight: normal; line-height: 1.4; opacity: 0; pointer-events: none; transform: translateY(4px); transition: 120ms ease; }
+.tooltip:hover::after, .tooltip:focus::after { opacity: 1; transform: translateY(0); }
 .section-description, .event-card p, .event-landing p, .hobby-details p { margin-top: 0; color: var(--muted-text); }
 .hobby-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; gap: 12px; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
 .form-field { display: flex; flex-direction: column; gap: 6px; }

@@ -165,7 +165,10 @@ function loadHobbies() {
 }
 
 let hobbies = loadHobbies();
+let publicHobbies = sampleHobbies.filter(function(hobby) { return !hobby.personal; });
+let hobbiesViewMode = "mine";
 let currentUser = null;
+let currentUserProfile = null;
 
 function saveHobbies() {
     if (currentUser) {
@@ -182,7 +185,7 @@ async function loadHobbiesFromSupabase() {
     const loadingUserId = currentUser.id;
     const { data: hobbyRows, error: hobbyError } = await hobbyHubSupabase
         .from("hobbies")
-        .select("id,title,description,image_url")
+        .select("id,title,description,image_url,is_public,owner_role")
         .eq("user_id", loadingUserId)
         .order("created_at", { ascending: true });
 
@@ -192,6 +195,28 @@ async function loadHobbiesFromSupabase() {
     if (!currentUser || currentUser.id !== loadingUserId) {
         return;
     }
+
+    const { data: browserRows, error: browserError } = await hobbyHubSupabase
+        .from("hobbies")
+        .select("id,user_id,title,description,image_url,is_public,owner_role")
+        .eq("is_public", true);
+
+    if (browserError) {
+        throw browserError;
+    }
+
+    publicHobbies = (browserRows || []).map(function(hobby) {
+        return {
+            id: hobby.id,
+            title: hobby.title,
+            description: hobby.description,
+            imageUrl: hobby.image_url || "",
+            visibility: "public",
+            ownerId: hobby.user_id,
+            ownerRole: hobby.owner_role || "admin",
+            events: []
+        };
+    });
 
     const { data: eventRows, error: eventError } = await hobbyHubSupabase
         .from("events")
@@ -213,6 +238,7 @@ async function loadHobbiesFromSupabase() {
             title: hobby.title,
             description: hobby.description,
             imageUrl: hobby.image_url || "",
+            visibility: hobby.is_public === false ? "personal" : "public",
             events: (eventRows || []).filter(function(event) {
                 return event.hobby_id === hobby.id;
             }).map(function(event) {
@@ -222,7 +248,9 @@ async function loadHobbiesFromSupabase() {
                     location: event.location,
                     mapQuery: event.map_query || "",
                     mapUrl: event.map_url || "",
-                    dateTime: event.starts_at ? event.starts_at.slice(0, 16) : ""
+                    dateTime: event.starts_at ? event.starts_at.slice(0, 16) : "",
+                    shareId: event.share_id || event.id,
+                    isPrivate: event.is_public === false
                 };
             })
         };
@@ -255,7 +283,8 @@ async function syncHobbiesToSupabase() {
                 user_id: currentUser.id,
                 title: hobby.title,
                 description: hobby.description,
-                image_url: hobby.imageUrl || null
+                image_url: hobby.imageUrl || null,
+                is_public: hobby.visibility !== "personal"
             };
         }))
         .select("id,title");
@@ -283,7 +312,7 @@ async function syncHobbiesToSupabase() {
                 map_url: event.mapUrl || "",
                 starts_at: event.dateTime || null,
                 image_url: localHobby.imageUrl || null,
-                is_public: true
+                is_public: !event.isPrivate
             });
         });
     });
@@ -343,18 +372,10 @@ function getMapQuery(event) {
 }
 
 function getEventPageUrl(hobby, event) {
-    const payload = {
-        e: event.id || "shared-event",
-        h: hobby.title,
-        t: event.title,
-        l: event.location,
-        d: event.dateTime,
-        q: getMapQuery(event),
-        i: hobby.imageUrl || ""
-    };
     const url = new URL(window.location.href);
     url.search = "";
-    url.hash = "e=" + encodeEventToken(payload);
+    url.hash = "";
+    url.searchParams.set("event", event.shareId || event.id || "shared-event");
     return url.toString();
 }
 
@@ -437,6 +458,25 @@ function createEventForm(hobby, hobbyIndex) {
     mapField.append(mapLabel, mapRow, mapPreview);
     form.append(mapField);
 
+    const privacyField = document.createElement("div");
+    const privacyLabel = document.createElement("label");
+    const privacyInput = document.createElement("input");
+    privacyField.className = "form-field event-privacy-field";
+    privacyLabel.className = "tooltip-label";
+    privacyInput.type = "checkbox";
+    privacyInput.name = "private";
+    privacyInput.id = "event-" + hobbyIndex + "-private";
+    privacyLabel.htmlFor = privacyInput.id;
+    privacyLabel.textContent = "Private ";
+    const tooltip = document.createElement("span");
+    tooltip.className = "tooltip";
+    tooltip.tabIndex = 0;
+    tooltip.textContent = "?";
+    tooltip.setAttribute("aria-label", "This event will be personal to you and those that you share the link to.");
+    privacyLabel.append(tooltip);
+    privacyField.append(privacyLabel, privacyInput);
+    form.append(privacyField);
+
     function updateMapPreview() {
         const query = mapInput.value.trim();
         if (!query) {
@@ -496,7 +536,8 @@ function createEventForm(hobby, hobbyIndex) {
             location: formData.get("location").trim(),
             mapQuery: mapQuery,
             mapUrl: "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(mapQuery),
-            dateTime: formData.get("dateTime")
+            dateTime: formData.get("dateTime"),
+            isPrivate: formData.get("private") === "on"
         });
         saveHobbies();
         refreshCurrentHobbyPage();
@@ -575,7 +616,27 @@ async function renderEventLanding() {
         }
     } else {
         const queryParams = new URLSearchParams(window.location.search);
-        if (queryParams.has("event") && queryParams.has("title")) {
+        if (queryParams.has("event") && !queryParams.has("title")) {
+            const shareId = queryParams.get("event");
+            const { data: sharedEvent, error } = await hobbyHubSupabase
+                .from("events")
+                .select("share_id,title,hobby_title,location,map_query,map_url,starts_at,image_url")
+                .eq("share_id", shareId)
+                .maybeSingle();
+            if (error) {
+                console.error("Unable to load shared event.", error);
+            } else if (sharedEvent) {
+                params = {
+                    event: sharedEvent.share_id,
+                    hobby: sharedEvent.hobby_title,
+                    title: sharedEvent.title,
+                    location: sharedEvent.location,
+                    dateTime: sharedEvent.starts_at,
+                    mapUrl: sharedEvent.map_url || "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(sharedEvent.map_query || sharedEvent.location),
+                    imageUrl: sharedEvent.image_url || ""
+                };
+            }
+        } else if (queryParams.has("event") && queryParams.has("title")) {
             params = Object.fromEntries(queryParams.entries());
         }
     }
@@ -713,8 +774,18 @@ function renderHobbyDetail(hobbyIndex) {
 
 function renderHobbies() {
     hobbyList.replaceChildren();
+    const browsing = hobbiesViewMode === "browse";
+    const visibleHobbies = browsing ? publicHobbies : hobbies.filter(function(hobby) {
+        return hobby.visibility !== "personal" || !hobby.joined || hobby.ownerId === currentUser?.id;
+    });
+    document.getElementById("current-hobbies-heading").textContent = browsing ? "Hobby browser" : "My hobbies";
+    document.getElementById("hobbies-view-description").textContent = browsing
+        ? "Discover public communities and join the ones you enjoy."
+        : "Your collection of hobbies joined and created.";
+    document.getElementById("my-hobbies-nav")?.classList.toggle("active", !browsing);
+    document.getElementById("hobby-browser-nav")?.classList.toggle("active", browsing);
 
-    hobbies.forEach(function(hobby, hobbyIndex) {
+    visibleHobbies.forEach(function(hobby, hobbyIndex) {
         const item = document.createElement("li");
         const cardLink = document.createElement("a");
         const title = document.createElement("h3");
@@ -738,6 +809,23 @@ function renderHobbies() {
         }
         cardLink.append(title);
         item.append(cardLink);
+        if (browsing && currentUser) {
+            const joinButton = document.createElement("button");
+            const alreadyJoined = hobbies.some(function(joined) { return joined.id === hobby.id; });
+            joinButton.className = alreadyJoined ? "remove-button" : "add-button";
+            joinButton.type = "button";
+            joinButton.textContent = alreadyJoined ? "Leave hobby" : "Join hobby";
+            joinButton.addEventListener("click", function() {
+                if (alreadyJoined) {
+                    hobbies = hobbies.filter(function(joined) { return joined.id !== hobby.id; });
+                } else {
+                    hobbies.push({ ...hobby, joined: true, events: hobby.events || [] });
+                }
+                saveHobbies();
+                renderHobbies();
+            });
+            item.append(joinButton);
+        }
         hobbyList.append(item);
     });
 }
@@ -754,6 +842,18 @@ if (testHobbyButton) {
         testHobbyIndex += 1;
     });
 }
+document.getElementById("my-hobbies-nav")?.addEventListener("click", function() {
+    hobbiesViewMode = "mine";
+    renderHobbies();
+});
+document.getElementById("hobby-browser-nav")?.addEventListener("click", function() {
+    if (!currentUser) {
+        window.location.hash = "login";
+        return;
+    }
+    hobbiesViewMode = "browse";
+    renderHobbies();
+});
 if (removeAllHobbiesButton) {
     removeAllHobbiesButton.addEventListener("click", function() {
         hobbies = [];
@@ -771,7 +871,8 @@ function addHobby(event) {
         return;
     }
 
-    hobbies.push({ title: title, description: description, imageUrl: imageUrl, events: [] });
+    const visibility = new FormData(hobbyForm).get("visibility") === "personal" ? "personal" : "public";
+    hobbies.push({ title: title, description: description, imageUrl: imageUrl, visibility: visibility, events: [] });
     saveHobbies();
     renderHobbies();
     hobbyForm.reset();
@@ -799,7 +900,18 @@ function initializePage() {
         document.getElementById("hobby-detail").hidden = true;
         document.getElementById("event-landing").hidden = true;
         document.getElementById("welcome-landing").hidden = true;
-        document.getElementById("profile-page").hidden = false;
+        const profilePage = document.getElementById("profile-page");
+        profilePage.hidden = false;
+        profilePage.innerHTML = '<h2 id="profile-title">Profile</h2>';
+        const badge = currentUserProfile && currentUserProfile.is_dev ? '<span class="role-badge dev-badge">DEV</span>' : '';
+        profilePage.insertAdjacentHTML("beforeend", '<p><strong>' + accountProfileLink.textContent + '</strong> ' + badge + '</p><h3>Your hobbies</h3><ul id="profile-hobbies" class="hobby-list"></ul>');
+        const profileList = document.getElementById("profile-hobbies");
+        hobbies.filter(function(hobby) { return hobby.visibility === "personal" || hobby.joined || !hobby.visibility || hobby.ownerId === currentUser.id; }).forEach(function(hobby) {
+            const item = document.createElement("li");
+            item.className = "hobby-card hobby-card-summary";
+            item.innerHTML = '<a class="hobby-card-link" href="#hobby=' + encodeURIComponent(hobby.title) + '"><h3>' + hobby.title + '</h3></a>';
+            profileList.append(item);
+        });
         return;
     }
 
@@ -891,11 +1003,12 @@ async function handleAuthState(session) {
         accountProfileLink.textContent = fallbackUsername;
         const { data: profile, error: profileError } = await hobbyHubSupabase
             .from("profiles")
-            .select("username")
+            .select("username,is_dev")
             .eq("id", currentUser.id)
             .maybeSingle();
         if (!profileError && profile && profile.username) {
             accountProfileLink.textContent = profile.username;
+            currentUserProfile = profile;
         }
 
         authStatus.textContent = "Signed in.";
