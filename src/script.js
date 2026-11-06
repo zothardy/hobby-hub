@@ -753,6 +753,44 @@ function refreshCurrentHobbyPage() {
     });
 }
 
+async function getForumUsernames(userIds) {
+    const uniqueIds = [...new Set((userIds || []).filter(Boolean))];
+    const names = {};
+    if (!uniqueIds.length) return names;
+    if (currentUser && uniqueIds.includes(currentUser.id)) {
+        names[currentUser.id] = currentUserProfile?.username || accountProfileLink.textContent || "You";
+    }
+    const unknownIds = uniqueIds.filter(function(id) { return !names[id]; });
+    if (!unknownIds.length) return names;
+    const { data } = await hobbyHubSupabase.from("profiles").select("id,username").in("id", unknownIds);
+    (data || []).forEach(function(profile) { names[profile.id] = profile.username; });
+    return names;
+}
+
+async function loadHobbyThreads(hobby) {
+    if (String(hobby.id || "").startsWith("sample-")) {
+        try { return JSON.parse(localStorage.getItem("hobbyHubForum:" + hobby.id)) || []; }
+        catch (error) { return []; }
+    }
+    if (!hobby.id) return [];
+    const { data: threads, error } = await hobbyHubSupabase
+        .from("hobby_threads")
+        .select("id,title,created_at,author_id")
+        .eq("hobby_id", hobby.id)
+        .order("created_at", { ascending: false });
+    if (error) throw error;
+    const loadedThreads = threads || [];
+    for (const thread of loadedThreads) {
+        const { data: posts } = await hobbyHubSupabase
+            .from("hobby_posts")
+            .select("id,body,author_id,created_at")
+            .eq("thread_id", thread.id)
+            .order("created_at", { ascending: true });
+        thread.posts = posts || [];
+    }
+    return loadedThreads;
+}
+
 async function createHobbyForum(hobby) {
     const forum = document.createElement("section");
     forum.className = "hobby-forum";
@@ -763,151 +801,147 @@ async function createHobbyForum(hobby) {
     forum.append(heading, list);
 
     let threads = [];
-    const localForumKey = "hobbyHubForum:" + (hobby.id || hobby.title);
-    if (!currentUser || String(hobby.id || "").startsWith("sample-")) {
-        try { threads = JSON.parse(localStorage.getItem(localForumKey)) || []; }
-        catch (error) { threads = []; }
-    } else {
-        try {
-            const { data, error } = await hobbyHubSupabase
-                .from("hobby_threads")
-                .select("id,title,created_at")
-                .eq("hobby_id", hobby.id)
-                .order("created_at", { ascending: false });
-            if (error) throw error;
-            threads = data || [];
-            for (const thread of threads) {
-                const { data: replies } = await hobbyHubSupabase
-                    .from("hobby_posts")
-                    .select("id,body,author_id,created_at")
-                    .eq("thread_id", thread.id)
-                    .order("created_at", { ascending: true });
-                thread.posts = replies || [];
-            }
-        } catch (error) {
-            list.textContent = "The forum is available when the latest database migration is installed.";
-        }
-    }
+    try { threads = await loadHobbyThreads(hobby); }
+    catch (error) { list.textContent = "The forum could not be loaded."; }
 
-    function saveLocalThreads() {
-        localStorage.setItem(localForumKey, JSON.stringify(threads));
-    }
-
-    function renderThreads() {
-        list.replaceChildren();
-        if (threads.length === 0) {
-            const empty = document.createElement("p");
-            empty.className = "forum-empty";
-            empty.textContent = "Start the first conversation in this hobby.";
-            list.append(empty);
-        }
-        threads.forEach(function(thread) {
-            const article = document.createElement("article");
-            article.className = "forum-thread";
-            const title = document.createElement("h4");
-            title.textContent = thread.title;
-            article.append(title);
-            (thread.posts || []).forEach(function(post) {
-                const reply = document.createElement("p");
-                reply.className = "forum-post";
-                reply.textContent = post.body;
-                article.append(reply);
-            });
-            if (currentUser) {
-                const replyForm = document.createElement("form");
-                replyForm.className = "forum-reply-form";
-                const replyInput = document.createElement("textarea");
-                replyInput.rows = 2;
-                replyInput.required = true;
-                replyInput.placeholder = "Add to the conversation…";
-                const replyButton = document.createElement("button");
-                replyButton.className = "add-button";
-                replyButton.type = "submit";
-                replyButton.textContent = "Reply";
-                replyForm.append(replyInput, replyButton);
-                replyForm.addEventListener("submit", async function(event) {
-                    event.preventDefault();
-                    const body = replyInput.value.trim();
-                    if (!body) return;
-                    if (String(hobby.id || "").startsWith("sample-")) {
-                        thread.posts = thread.posts || [];
-                        thread.posts.push({ body: body });
-                        saveLocalThreads();
-                        renderThreads();
-                    } else {
-                        const { error } = await hobbyHubSupabase.from("hobby_posts").insert({
-                            thread_id: thread.id,
-                            author_id: currentUser.id,
-                            body: body
-                        });
-                        if (error) { authStatus.textContent = "Unable to add reply: " + error.message; return; }
-                        await renderForum();
-                    }
-                });
-                article.append(replyForm);
-            }
-            list.append(article);
-        });
-    }
-
-    async function renderForum() {
-        if (!String(hobby.id || "").startsWith("sample-") && currentUser) {
-            const { data } = await hobbyHubSupabase.from("hobby_threads").select("id,title,created_at").eq("hobby_id", hobby.id).order("created_at", { ascending: false });
-            threads = data || [];
-            for (const thread of threads) {
-                const { data: replies } = await hobbyHubSupabase.from("hobby_posts").select("id,body,author_id,created_at").eq("thread_id", thread.id).order("created_at", { ascending: true });
-                thread.posts = replies || [];
-            }
-        }
-        renderThreads();
-    }
+    const authorIds = threads.flatMap(function(thread) {
+        return [thread.author_id].concat((thread.posts || []).map(function(post) { return post.author_id; }));
+    });
+    const usernames = await getForumUsernames(authorIds);
 
     if (currentUser) {
-        const newThreadForm = document.createElement("form");
-        newThreadForm.className = "forum-thread-form";
-        const titleInput = document.createElement("input");
-        titleInput.type = "text";
-        titleInput.required = true;
-        titleInput.maxLength = 160;
-        titleInput.placeholder = "Start a new discussion";
-        const postInput = document.createElement("textarea");
-        postInput.rows = 3;
-        postInput.required = true;
-        postInput.placeholder = "What would you like to discuss?";
-        const submitButton = document.createElement("button");
-        submitButton.className = "add-button";
-        submitButton.type = "submit";
-        submitButton.textContent = "Post discussion";
-        newThreadForm.append(titleInput, postInput, submitButton);
-        newThreadForm.addEventListener("submit", async function(event) {
-            event.preventDefault();
-            if (String(hobby.id || "").startsWith("sample-")) {
-                threads.unshift({ title: titleInput.value.trim(), posts: [{ body: postInput.value.trim() }] });
-                saveLocalThreads();
-                renderThreads();
-                newThreadForm.reset();
-                return;
-            }
-            const { data: createdThread, error } = await hobbyHubSupabase.from("hobby_threads")
-                .insert({ hobby_id: hobby.id, author_id: currentUser.id, title: titleInput.value.trim() })
-                .select("id")
-                .single();
-            if (error) { authStatus.textContent = "Unable to create discussion: " + error.message; return; }
-            const { error: postError } = await hobbyHubSupabase.from("hobby_posts")
-                .insert({ thread_id: createdThread.id, author_id: currentUser.id, body: postInput.value.trim() });
-            if (postError) { authStatus.textContent = "Discussion created, but the opening post failed: " + postError.message; return; }
-            newThreadForm.reset();
-            await renderForum();
+        const newPostButton = document.createElement("button");
+        newPostButton.className = "primary-cta";
+        newPostButton.type = "button";
+        newPostButton.textContent = "Make a post";
+        newPostButton.addEventListener("click", function() {
+            window.location.hash = "new-post=" + encodeURIComponent(hobby.title);
         });
-        forum.append(newThreadForm);
+        forum.insertBefore(newPostButton, list);
     } else {
         const signInPrompt = document.createElement("p");
         signInPrompt.className = "forum-empty";
-        signInPrompt.textContent = "Log in to start discussions and reply.";
-        forum.append(signInPrompt);
+        signInPrompt.textContent = "Log in to make posts and reply.";
+        forum.insertBefore(signInPrompt, list);
     }
-    renderThreads();
+
+    if (!threads.length) {
+        const empty = document.createElement("p");
+        empty.className = "forum-empty";
+        empty.textContent = "Start the first conversation in this hobby.";
+        list.append(empty);
+    }
+    threads.forEach(function(thread) {
+        const link = document.createElement("a");
+        link.className = "forum-thread forum-thread-link";
+        link.href = "#thread=" + encodeURIComponent(thread.id) + "&hobby=" + encodeURIComponent(hobby.title);
+        const title = document.createElement("h4");
+        title.textContent = thread.title;
+        const meta = document.createElement("div");
+        meta.className = "forum-thread-meta";
+        const author = document.createElement("span");
+        author.className = "forum-author";
+        author.textContent = usernames[thread.author_id] || thread.authorName || "Community member";
+        const replies = document.createElement("span");
+        replies.className = "reply-count";
+        replies.title = "Replies";
+        replies.textContent = "💬 " + Math.max(0, (thread.posts || []).length - 1);
+        meta.append(author, replies);
+        link.append(title, meta);
+        list.append(link);
+    });
     return forum;
+}
+
+async function renderNewPostPage(hobbyTitle) {
+    const page = document.getElementById("forum-new-post-page");
+    const hobby = findHobbyByTitle(hobbyTitle);
+    page.querySelector("h2").textContent = "New post in " + (hobby ? hobby.title : hobbyTitle);
+    const form = page.querySelector("form");
+    form.onsubmit = async function(event) {
+        event.preventDefault();
+        const title = form.elements.postTitle.value.trim();
+        const body = form.elements.postBody.value.trim();
+        if (!title || !body) return;
+        if (!hobby || !currentUser) return;
+        if (String(hobby.id || "").startsWith("sample-")) {
+            const key = "hobbyHubForum:" + hobby.id;
+            let threads = [];
+            try { threads = JSON.parse(localStorage.getItem(key)) || []; } catch (error) {}
+            threads.unshift({ id: "local-" + Date.now(), title: title, authorId: currentUser.id, authorName: accountProfileLink.textContent, posts: [{ body: body, authorId: currentUser.id, authorName: accountProfileLink.textContent }] });
+            localStorage.setItem(key, JSON.stringify(threads));
+        } else {
+            const { data: createdThread, error } = await hobbyHubSupabase.from("hobby_threads")
+                .insert({ hobby_id: hobby.id, author_id: currentUser.id, title: title }).select("id").single();
+            if (error) { authStatus.textContent = "Unable to create post: " + error.message; return; }
+            const { error: postError } = await hobbyHubSupabase.from("hobby_posts")
+                .insert({ thread_id: createdThread.id, author_id: currentUser.id, body: body });
+            if (postError) { authStatus.textContent = "Post created, but its content could not be saved: " + postError.message; return; }
+        }
+        form.reset();
+        window.location.hash = "hobby=" + encodeURIComponent(hobby.title);
+    };
+}
+
+async function renderForumPostPage(threadId, hobbyTitle) {
+    const page = document.getElementById("forum-post-page");
+    const hobby = findHobbyByTitle(hobbyTitle);
+    let thread = null;
+    if (hobby && String(hobby.id || "").startsWith("sample-")) {
+        try {
+            const threads = JSON.parse(localStorage.getItem("hobbyHubForum:" + hobby.id)) || [];
+            thread = threads.find(function(item) { return item.id === threadId; });
+        } catch (error) {}
+    } else if (threadId) {
+        const { data: threadRow } = await hobbyHubSupabase.from("hobby_threads").select("id,title,author_id,created_at").eq("id", threadId).single();
+        if (threadRow) {
+            const { data: posts } = await hobbyHubSupabase.from("hobby_posts").select("id,body,author_id,created_at").eq("thread_id", threadId).order("created_at", { ascending: true });
+            thread = { ...threadRow, posts: posts || [] };
+        }
+    }
+    const content = page.querySelector(".forum-post-content");
+    content.replaceChildren();
+    if (!thread) {
+        content.textContent = "This post could not be found.";
+        return;
+    }
+    const title = document.createElement("h2");
+    title.textContent = thread.title;
+    content.append(title);
+    const authorIds = [thread.author_id].concat((thread.posts || []).map(function(post) { return post.author_id || post.authorId; }));
+    const usernames = await getForumUsernames(authorIds);
+    const posts = thread.posts && thread.posts.length ? thread.posts : [{ body: "", authorId: thread.authorId, authorName: thread.authorName }];
+    posts.forEach(function(post) {
+        const row = document.createElement("article");
+        row.className = "forum-post-row";
+        const author = document.createElement("a");
+        author.className = "forum-post-author";
+        author.textContent = usernames[post.author_id || post.authorId] || post.authorName || "Community member";
+        const body = document.createElement("p");
+        body.className = "forum-post-body";
+        body.textContent = post.body;
+        row.append(author, body);
+        content.append(row);
+    });
+    const replyForm = page.querySelector("form");
+    replyForm.hidden = !currentUser;
+    replyForm.onsubmit = async function(event) {
+        event.preventDefault();
+        const body = replyForm.elements.replyBody.value.trim();
+        if (!body) return;
+        if (hobby && String(hobby.id || "").startsWith("sample-")) {
+            thread.posts.push({ body: body, authorId: currentUser.id, authorName: accountProfileLink.textContent });
+            const threads = JSON.parse(localStorage.getItem("hobbyHubForum:" + hobby.id)) || [];
+            const stored = threads.find(function(item) { return item.id === threadId; });
+            if (stored) stored.posts = thread.posts;
+            localStorage.setItem("hobbyHubForum:" + hobby.id, JSON.stringify(threads));
+        } else {
+            const { error } = await hobbyHubSupabase.from("hobby_posts").insert({ thread_id: threadId, author_id: currentUser.id, body: body });
+            if (error) { authStatus.textContent = "Unable to add reply: " + error.message; return; }
+        }
+        replyForm.reset();
+        await renderForumPostPage(threadId, hobbyTitle);
+    };
 }
 
 function findHobbyByTitle(title) {
@@ -1153,12 +1187,34 @@ function addHobby(event) {
     hobbyTitleInput.focus();
 }
 
+function hideCommunityPages() {
+    ["hobbies-view", "hobby-detail", "event-landing", "profile-page", "welcome-landing", "create-hobby-page", "forum-new-post-page", "forum-post-page"].forEach(function(id) {
+        document.getElementById(id).hidden = true;
+    });
+}
+
 function initializePage() {
     const hashParams = new URLSearchParams(window.location.hash.slice(1));
     const loginPage = document.getElementById("login-page");
     const signupPage = document.getElementById("signup-page");
     loginPage.hidden = !hashParams.has("login") || Boolean(currentUser);
     signupPage.hidden = !hashParams.has("signup") || Boolean(currentUser);
+
+    if (hashParams.has("new-post") && currentUser) {
+        renderNewPostPage(hashParams.get("new-post"));
+        hideCommunityPages();
+        document.getElementById("forum-new-post-page").hidden = false;
+        document.title = "New post | HobbyHub";
+        return;
+    }
+
+    if (hashParams.has("thread")) {
+        renderForumPostPage(hashParams.get("thread"), hashParams.get("hobby"));
+        hideCommunityPages();
+        document.getElementById("forum-post-page").hidden = false;
+        document.title = "Community post | HobbyHub";
+        return;
+    }
 
     if (hashParams.has("create-hobby") && currentUser) {
         document.getElementById("hobbies-view").hidden = true;
@@ -1202,6 +1258,8 @@ function initializePage() {
 
     document.getElementById("profile-page").hidden = true;
     document.getElementById("create-hobby-page").hidden = true;
+    document.getElementById("forum-new-post-page").hidden = true;
+    document.getElementById("forum-post-page").hidden = true;
     document.getElementById("welcome-landing").hidden = Boolean(currentUser);
     loginPage.hidden = true;
     signupPage.hidden = true;

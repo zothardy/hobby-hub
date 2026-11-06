@@ -137,6 +137,25 @@
             <ul id="hobby-list" class="hobby-list" aria-live="polite"></ul>
         </section>
 
+        <section id="forum-new-post-page" class="forum-dedicated-page" hidden aria-labelledby="new-post-title">
+            <a href="#" class="back-link">Back to HobbyHub</a>
+            <h2 id="new-post-title">New post</h2>
+            <form class="forum-new-post-form">
+                <div class="form-field"><label for="forum-post-title">Post title</label><input id="forum-post-title" name="postTitle" type="text" maxlength="160" required></div>
+                <div class="form-field"><label for="forum-post-body">Post</label><textarea id="forum-post-body" name="postBody" rows="8" maxlength="5000" required></textarea></div>
+                <button class="primary-cta" type="submit">Publish post</button>
+            </form>
+        </section>
+
+        <section id="forum-post-page" class="forum-dedicated-page" hidden aria-labelledby="forum-post-title">
+            <a href="#" class="back-link">Back to HobbyHub</a>
+            <div class="forum-post-content"></div>
+            <form class="forum-reply-form">
+                <div class="form-field"><label for="forum-reply-body">Add a reply</label><textarea id="forum-reply-body" name="replyBody" rows="4" maxlength="5000" required></textarea></div>
+                <button class="add-button" type="submit">Reply</button>
+            </form>
+        </section>
+
         <section id="create-hobby-page" class="create-hobby-page" hidden aria-labelledby="create-hobby-title">
             <a href="#" class="back-link">Back to HobbyHub</a>
             <h2 id="create-hobby-title">Create a hobby community</h2>

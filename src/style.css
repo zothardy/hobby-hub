@@ -183,7 +183,21 @@ h2 { margin: 0 0 6px; }
 .forum-thread-form button, .forum-reply-form button { justify-self: start; }
 .forum-thread-list { display: grid; gap: 12px; }
 .forum-thread { padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.forum-thread-link { display: block; color: var(--text); text-decoration: none; }
+.forum-thread-link:hover { border-color: var(--accent); }
 .forum-thread h4 { margin: 0 0 12px; }
+.forum-thread-meta { display: flex; justify-content: space-between; align-items: center; color: var(--muted-text); font-size: 13px; }
+.reply-count { white-space: nowrap; }
+.forum-dedicated-page { max-width: 760px; margin: 0 auto; }
+.forum-new-post-form, .forum-post-content + .forum-reply-form { margin-top: 18px; }
+.forum-new-post-form { display: grid; gap: 14px; }
+.forum-post-row { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 16px; padding: 16px 0; border-top: 1px solid var(--border); }
+.forum-post-author { color: var(--accent); font-weight: bold; text-decoration: none; }
+.forum-post-body { margin: 0; white-space: pre-wrap; line-break: anywhere; }
+.forum-post-content + .forum-reply-form { display: grid; grid-template-columns: minmax(0, 140px) minmax(0, 1fr); gap: 16px; }
+.forum-post-content + .forum-reply-form .form-field { grid-column: 2; }
+.forum-post-content + .forum-reply-form button { grid-column: 2; justify-self: start; }
+@media (max-width: 600px) { .forum-post-row, .forum-post-content + .forum-reply-form { grid-template-columns: 1fr; } .forum-post-content + .forum-reply-form .form-field, .forum-post-content + .forum-reply-form button { grid-column: 1; } }
 .forum-post { margin: 8px 0 8px 14px; padding-left: 12px; border-left: 3px solid var(--accent); white-space: pre-wrap; }
 .forum-empty { color: var(--muted-text); }
 .hobby-details h3 { margin: 0 0 8px; }
