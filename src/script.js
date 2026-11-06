@@ -542,6 +542,7 @@ function createEventForm(hobby, hobbyIndex) {
     const submitButton = document.createElement("button");
     formActions.className = "form-actions";
     testButton.className = "test-button";
+    testButton.hidden = true;
     testButton.type = "button";
     testButton.textContent = "Test";
     testButton.addEventListener("click", function() {
@@ -625,7 +626,7 @@ function renderEvent(event, hobby, hobbyIndex, eventIndex) {
     removeButton.className = "remove-button";
     removeButton.type = "button";
     removeButton.textContent = "Remove";
-    removeButton.hidden = Boolean(hobby.readOnly && !currentUser);
+    removeButton.hidden = true;
     removeButton.addEventListener("click", function() {
         hobby.events.splice(eventIndex, 1);
         saveHobbies();
@@ -952,7 +953,7 @@ async function renderHobbyDetail(hobbyIndex) {
     removeButton.className = "remove-button hobby-remove-button";
     removeButton.type = "button";
     removeButton.textContent = "Remove hobby";
-    removeButton.hidden = Boolean(hobby.readOnly && !currentUser);
+    removeButton.hidden = !Boolean(currentUserProfile && currentUserProfile.is_dev);
     removeButton.addEventListener("click", function() {
         hobbies.splice(hobbyIndex, 1);
         saveHobbies();
@@ -998,8 +999,8 @@ function renderHobbies() {
     document.getElementById("my-hobbies-nav")?.classList.toggle("active", !browsing);
     document.getElementById("hobby-browser-nav")?.classList.toggle("active", browsing);
     document.getElementById("hobby-search-wrap").hidden = !browsing;
-    const addButton = document.getElementById("add-hobby-button");
-    addButton.hidden = browsing || !currentUser;
+    document.getElementById("add-hobby-button").hidden = !browsing || !currentUser;
+    document.getElementById("add-hobby-button-mine").hidden = browsing || !currentUser;
 
     visibleHobbies.forEach(function(hobby, hobbyIndex) {
         const item = document.createElement("li");
@@ -1038,13 +1039,17 @@ function renderHobbies() {
         }
         if (browsing && currentUser) {
             const joinButton = document.createElement("button");
-            const alreadyJoined = hobbies.some(function(joined) { return joined.id === hobby.id; });
-            joinButton.className = alreadyJoined ? "remove-button" : "add-button";
+            const alreadyJoined = hobbies.some(function(joined) {
+                return joined.id === hobby.id || joined.title.toLowerCase() === hobby.title.toLowerCase();
+            });
+            joinButton.className = alreadyJoined ? "secondary-cta leave-hobby-button" : "add-button";
             joinButton.type = "button";
-            joinButton.textContent = alreadyJoined ? "Leave my hobbies" : "Add to my hobbies";
+            joinButton.textContent = alreadyJoined ? "Leave hobby" : "Join hobby";
             joinButton.addEventListener("click", function() {
                 if (alreadyJoined) {
-                    hobbies = hobbies.filter(function(joined) { return joined.id !== hobby.id; });
+                    hobbies = hobbies.filter(function(joined) {
+                        return joined.id !== hobby.id && joined.title.toLowerCase() !== hobby.title.toLowerCase();
+                    });
                 } else {
                     hobbies.push({ ...hobby, joined: true, events: hobby.events || [] });
                 }
@@ -1052,6 +1057,19 @@ function renderHobbies() {
                 renderHobbies();
             });
             item.append(joinButton);
+        } else if (!browsing && currentUser) {
+            const leaveButton = document.createElement("button");
+            leaveButton.className = "secondary-cta leave-hobby-button";
+            leaveButton.type = "button";
+            leaveButton.textContent = "Leave hobby";
+            leaveButton.addEventListener("click", function() {
+                hobbies = hobbies.filter(function(joined) {
+                    return joined.id !== hobby.id && joined.title.toLowerCase() !== hobby.title.toLowerCase();
+                });
+                saveHobbies();
+                renderHobbies();
+            });
+            item.append(leaveButton);
         }
         hobbyList.append(item);
     });
@@ -1077,10 +1095,15 @@ document.getElementById("hobby-browser-nav")?.addEventListener("click", function
     hobbiesViewMode = "browse";
     renderHobbies();
 });
-document.getElementById("add-hobby-button")?.addEventListener("click", function() {
-    hobbyForm.hidden = !hobbyForm.hidden;
-    if (!hobbyForm.hidden) hobbyTitleInput.focus();
-});
+function openHobbyCreator() {
+    if (!currentUser) {
+        window.location.hash = "login";
+        return;
+    }
+    window.location.hash = "create-hobby";
+}
+document.getElementById("add-hobby-button")?.addEventListener("click", openHobbyCreator);
+document.getElementById("add-hobby-button-mine")?.addEventListener("click", openHobbyCreator);
 document.getElementById("hobby-search")?.addEventListener("input", renderHobbies);
 document.getElementById("hobby-public")?.addEventListener("change", function(event) {
     document.getElementById("visibility-help").textContent = event.target.checked
@@ -1122,10 +1145,11 @@ function addHobby(event) {
     }
     hobbies.push(newHobby);
     saveHobbies();
-    hobbyForm.hidden = true;
     hobbiesViewMode = "mine";
     renderHobbies();
     hobbyForm.reset();
+    window.location.hash = "";
+    window.requestAnimationFrame(initializePage);
     hobbyTitleInput.focus();
 }
 
@@ -1135,6 +1159,17 @@ function initializePage() {
     const signupPage = document.getElementById("signup-page");
     loginPage.hidden = !hashParams.has("login") || Boolean(currentUser);
     signupPage.hidden = !hashParams.has("signup") || Boolean(currentUser);
+
+    if (hashParams.has("create-hobby") && currentUser) {
+        document.getElementById("hobbies-view").hidden = true;
+        document.getElementById("hobby-detail").hidden = true;
+        document.getElementById("event-landing").hidden = true;
+        document.getElementById("profile-page").hidden = true;
+        document.getElementById("welcome-landing").hidden = true;
+        document.getElementById("create-hobby-page").hidden = false;
+        document.title = "Create a hobby | HobbyHub";
+        return;
+    }
 
     if (hashParams.has("login") || hashParams.has("signup")) {
         document.getElementById("hobbies-view").hidden = true;
@@ -1166,6 +1201,7 @@ function initializePage() {
     }
 
     document.getElementById("profile-page").hidden = true;
+    document.getElementById("create-hobby-page").hidden = true;
     document.getElementById("welcome-landing").hidden = Boolean(currentUser);
     loginPage.hidden = true;
     signupPage.hidden = true;
@@ -1260,6 +1296,7 @@ async function handleAuthState(session) {
             accountProfileLink.textContent = profile.username;
             currentUserProfile = profile;
         }
+        accountProfileLink.classList.toggle("dev-profile-name", Boolean(currentUserProfile && currentUserProfile.is_dev));
 
         authStatus.textContent = "Signed in.";
         const route = new URLSearchParams(window.location.hash.slice(1));

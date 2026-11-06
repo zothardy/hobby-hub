@@ -93,6 +93,11 @@ h2 { margin: 0 0 6px; }
 .visibility-toggle input:checked + .visibility-toggle-track::after { transform: translateX(22px); }
 .hobby-label-list { position: relative; z-index: 2; display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 16px 14px; }
 .hobby-label { padding: 4px 8px; border-radius: 999px; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); font-size: 12px; font-weight: bold; }
+ .test-button, #remove-all-hobbies-button { display: none !important; }
+ .create-hobby-page { max-width: 760px; margin: 0 auto; }
+ .create-hobby-page .hobby-form { margin-top: 18px; }
+ .dev-profile-name { color: #ff31d1 !important; text-shadow: 0 0 12px color-mix(in srgb, #ff31d1 70%, transparent); }
+ .leave-hobby-button { color: var(--text); }
 .community-nav { display: flex; gap: 8px; margin-bottom: 18px; }
 .community-nav-button { padding: 9px 14px; border: 1px solid var(--border); border-radius: 999px; color: var(--text); background: var(--surface); cursor: pointer; }
 .community-nav-button.active { border-color: var(--accent); color: var(--accent-text); background: var(--accent); }
